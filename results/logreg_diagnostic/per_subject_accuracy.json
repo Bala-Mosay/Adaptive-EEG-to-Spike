@@ -1,0 +1,512 @@
+[
+  {
+    "subject": "S096",
+    "n_trials": 84,
+    "accuracy": 0.2485294117647059
+  },
+  {
+    "subject": "S039",
+    "n_trials": 88,
+    "accuracy": 0.26143790849673204
+  },
+  {
+    "subject": "S097",
+    "n_trials": 88,
+    "accuracy": 0.26209150326797387
+  },
+  {
+    "subject": "S077",
+    "n_trials": 84,
+    "accuracy": 0.27426470588235297
+  },
+  {
+    "subject": "S106",
+    "n_trials": 80,
+    "accuracy": 0.275
+  },
+  {
+    "subject": "S040",
+    "n_trials": 84,
+    "accuracy": 0.28455882352941175
+  },
+  {
+    "subject": "S105",
+    "n_trials": 84,
+    "accuracy": 0.28455882352941175
+  },
+  {
+    "subject": "S083",
+    "n_trials": 88,
+    "accuracy": 0.2849673202614379
+  },
+  {
+    "subject": "S009",
+    "n_trials": 84,
+    "accuracy": 0.2852941176470588
+  },
+  {
+    "subject": "S066",
+    "n_trials": 88,
+    "accuracy": 0.28627450980392155
+  },
+  {
+    "subject": "S109",
+    "n_trials": 80,
+    "accuracy": 0.2875
+  },
+  {
+    "subject": "S084",
+    "n_trials": 88,
+    "accuracy": 0.29411764705882354
+  },
+  {
+    "subject": "S005",
+    "n_trials": 84,
+    "accuracy": 0.29926470588235293
+  },
+  {
+    "subject": "S099",
+    "n_trials": 84,
+    "accuracy": 0.31911764705882356
+  },
+  {
+    "subject": "S076",
+    "n_trials": 84,
+    "accuracy": 0.3205882352941177
+  },
+  {
+    "subject": "S017",
+    "n_trials": 84,
+    "accuracy": 0.32279411764705884
+  },
+  {
+    "subject": "S010",
+    "n_trials": 84,
+    "accuracy": 0.3235294117647059
+  },
+  {
+    "subject": "S049",
+    "n_trials": 88,
+    "accuracy": 0.3281045751633987
+  },
+  {
+    "subject": "S037",
+    "n_trials": 84,
+    "accuracy": 0.3323529411764706
+  },
+  {
+    "subject": "S107",
+    "n_trials": 84,
+    "accuracy": 0.33235294117647063
+  },
+  {
+    "subject": "S082",
+    "n_trials": 80,
+    "accuracy": 0.3375
+  },
+  {
+    "subject": "S079",
+    "n_trials": 88,
+    "accuracy": 0.33986928104575165
+  },
+  {
+    "subject": "S078",
+    "n_trials": 88,
+    "accuracy": 0.3405228758169935
+  },
+  {
+    "subject": "S057",
+    "n_trials": 84,
+    "accuracy": 0.34558823529411764
+  },
+  {
+    "subject": "S064",
+    "n_trials": 80,
+    "accuracy": 0.35
+  },
+  {
+    "subject": "S024",
+    "n_trials": 88,
+    "accuracy": 0.35163398692810455
+  },
+  {
+    "subject": "S028",
+    "n_trials": 88,
+    "accuracy": 0.3522875816993464
+  },
+  {
+    "subject": "S073",
+    "n_trials": 84,
+    "accuracy": 0.35661764705882354
+  },
+  {
+    "subject": "S014",
+    "n_trials": 84,
+    "accuracy": 0.3573529411764706
+  },
+  {
+    "subject": "S030",
+    "n_trials": 80,
+    "accuracy": 0.3625
+  },
+  {
+    "subject": "S098",
+    "n_trials": 88,
+    "accuracy": 0.3627450980392156
+  },
+  {
+    "subject": "S087",
+    "n_trials": 84,
+    "accuracy": 0.36838235294117644
+  },
+  {
+    "subject": "S101",
+    "n_trials": 84,
+    "accuracy": 0.3691176470588235
+  },
+  {
+    "subject": "S041",
+    "n_trials": 84,
+    "accuracy": 0.36911764705882355
+  },
+  {
+    "subject": "S067",
+    "n_trials": 76,
+    "accuracy": 0.36999999999999994
+  },
+  {
+    "subject": "S006",
+    "n_trials": 84,
+    "accuracy": 0.37058823529411766
+  },
+  {
+    "subject": "S102",
+    "n_trials": 84,
+    "accuracy": 0.37058823529411766
+  },
+  {
+    "subject": "S043",
+    "n_trials": 88,
+    "accuracy": 0.3738562091503268
+  },
+  {
+    "subject": "S020",
+    "n_trials": 72,
+    "accuracy": 0.3742857142857143
+  },
+  {
+    "subject": "S023",
+    "n_trials": 88,
+    "accuracy": 0.37450980392156863
+  },
+  {
+    "subject": "S074",
+    "n_trials": 72,
+    "accuracy": 0.37523809523809526
+  },
+  {
+    "subject": "S108",
+    "n_trials": 88,
+    "accuracy": 0.3758169934640523
+  },
+  {
+    "subject": "S065",
+    "n_trials": 84,
+    "accuracy": 0.38014705882352945
+  },
+  {
+    "subject": "S059",
+    "n_trials": 84,
+    "accuracy": 0.3808823529411765
+  },
+  {
+    "subject": "S061",
+    "n_trials": 84,
+    "accuracy": 0.3830882352941177
+  },
+  {
+    "subject": "S019",
+    "n_trials": 88,
+    "accuracy": 0.38627450980392164
+  },
+  {
+    "subject": "S008",
+    "n_trials": 88,
+    "accuracy": 0.38692810457516347
+  },
+  {
+    "subject": "S016",
+    "n_trials": 80,
+    "accuracy": 0.3875
+  },
+  {
+    "subject": "S047",
+    "n_trials": 84,
+    "accuracy": 0.39117647058823524
+  },
+  {
+    "subject": "S069",
+    "n_trials": 84,
+    "accuracy": 0.39338235294117646
+  },
+  {
+    "subject": "S045",
+    "n_trials": 84,
+    "accuracy": 0.39632352941176474
+  },
+  {
+    "subject": "S063",
+    "n_trials": 88,
+    "accuracy": 0.3967320261437909
+  },
+  {
+    "subject": "S012",
+    "n_trials": 68,
+    "accuracy": 0.39780219780219783
+  },
+  {
+    "subject": "S021",
+    "n_trials": 84,
+    "accuracy": 0.4036764705882353
+  },
+  {
+    "subject": "S051",
+    "n_trials": 76,
+    "accuracy": 0.4041666666666666
+  },
+  {
+    "subject": "S046",
+    "n_trials": 88,
+    "accuracy": 0.4071895424836601
+  },
+  {
+    "subject": "S003",
+    "n_trials": 88,
+    "accuracy": 0.40915032679738567
+  },
+  {
+    "subject": "S013",
+    "n_trials": 88,
+    "accuracy": 0.40915032679738567
+  },
+  {
+    "subject": "S075",
+    "n_trials": 88,
+    "accuracy": 0.40980392156862744
+  },
+  {
+    "subject": "S032",
+    "n_trials": 84,
+    "accuracy": 0.4169117647058823
+  },
+  {
+    "subject": "S048",
+    "n_trials": 84,
+    "accuracy": 0.4169117647058823
+  },
+  {
+    "subject": "S026",
+    "n_trials": 84,
+    "accuracy": 0.4169117647058824
+  },
+  {
+    "subject": "S056",
+    "n_trials": 88,
+    "accuracy": 0.4176470588235294
+  },
+  {
+    "subject": "S027",
+    "n_trials": 88,
+    "accuracy": 0.42091503267973857
+  },
+  {
+    "subject": "S068",
+    "n_trials": 88,
+    "accuracy": 0.4222222222222222
+  },
+  {
+    "subject": "S054",
+    "n_trials": 84,
+    "accuracy": 0.4272058823529411
+  },
+  {
+    "subject": "S004",
+    "n_trials": 88,
+    "accuracy": 0.4313725490196078
+  },
+  {
+    "subject": "S022",
+    "n_trials": 88,
+    "accuracy": 0.43202614379084964
+  },
+  {
+    "subject": "S052",
+    "n_trials": 80,
+    "accuracy": 0.4375
+  },
+  {
+    "subject": "S081",
+    "n_trials": 64,
+    "accuracy": 0.4397435897435898
+  },
+  {
+    "subject": "S001",
+    "n_trials": 88,
+    "accuracy": 0.4522875816993464
+  },
+  {
+    "subject": "S080",
+    "n_trials": 84,
+    "accuracy": 0.45367647058823535
+  },
+  {
+    "subject": "S011",
+    "n_trials": 88,
+    "accuracy": 0.4549019607843137
+  },
+  {
+    "subject": "S090",
+    "n_trials": 84,
+    "accuracy": 0.45588235294117646
+  },
+  {
+    "subject": "S044",
+    "n_trials": 76,
+    "accuracy": 0.45916666666666667
+  },
+  {
+    "subject": "S095",
+    "n_trials": 88,
+    "accuracy": 0.4647058823529412
+  },
+  {
+    "subject": "S103",
+    "n_trials": 88,
+    "accuracy": 0.4666666666666666
+  },
+  {
+    "subject": "S058",
+    "n_trials": 84,
+    "accuracy": 0.475
+  },
+  {
+    "subject": "S060",
+    "n_trials": 88,
+    "accuracy": 0.4784313725490196
+  },
+  {
+    "subject": "S053",
+    "n_trials": 88,
+    "accuracy": 0.48039215686274517
+  },
+  {
+    "subject": "S094",
+    "n_trials": 84,
+    "accuracy": 0.4889705882352941
+  },
+  {
+    "subject": "S093",
+    "n_trials": 88,
+    "accuracy": 0.5006535947712418
+  },
+  {
+    "subject": "S050",
+    "n_trials": 84,
+    "accuracy": 0.5139705882352941
+  },
+  {
+    "subject": "S015",
+    "n_trials": 88,
+    "accuracy": 0.5143790849673203
+  },
+  {
+    "subject": "S007",
+    "n_trials": 88,
+    "accuracy": 0.5196078431372549
+  },
+  {
+    "subject": "S036",
+    "n_trials": 80,
+    "accuracy": 0.525
+  },
+  {
+    "subject": "S085",
+    "n_trials": 88,
+    "accuracy": 0.5313725490196078
+  },
+  {
+    "subject": "S033",
+    "n_trials": 88,
+    "accuracy": 0.5562091503267974
+  },
+  {
+    "subject": "S071",
+    "n_trials": 80,
+    "accuracy": 0.575
+  },
+  {
+    "subject": "S029",
+    "n_trials": 88,
+    "accuracy": 0.5790849673202614
+  },
+  {
+    "subject": "S055",
+    "n_trials": 88,
+    "accuracy": 0.5797385620915033
+  },
+  {
+    "subject": "S018",
+    "n_trials": 76,
+    "accuracy": 0.5925
+  },
+  {
+    "subject": "S002",
+    "n_trials": 80,
+    "accuracy": 0.6
+  },
+  {
+    "subject": "S086",
+    "n_trials": 80,
+    "accuracy": 0.6
+  },
+  {
+    "subject": "S034",
+    "n_trials": 84,
+    "accuracy": 0.6058823529411764
+  },
+  {
+    "subject": "S025",
+    "n_trials": 84,
+    "accuracy": 0.6301470588235294
+  },
+  {
+    "subject": "S042",
+    "n_trials": 84,
+    "accuracy": 0.6323529411764706
+  },
+  {
+    "subject": "S070",
+    "n_trials": 88,
+    "accuracy": 0.638562091503268
+  },
+  {
+    "subject": "S072",
+    "n_trials": 80,
+    "accuracy": 0.6625
+  },
+  {
+    "subject": "S035",
+    "n_trials": 84,
+    "accuracy": 0.6801470588235294
+  },
+  {
+    "subject": "S031",
+    "n_trials": 76,
+    "accuracy": 0.6983333333333334
+  },
+  {
+    "subject": "S062",
+    "n_trials": 88,
+    "accuracy": 0.7183006535947711
+  }
+]

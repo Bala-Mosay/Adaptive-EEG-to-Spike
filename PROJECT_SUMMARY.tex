@@ -1,0 +1,132 @@
+\documentclass[10pt]{beamer}
+
+\usetheme{Madrid}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{\hfill\insertframenumber/\inserttotalframenumber\hspace*{5pt}\vspace{2pt}}
+
+\title{Project Summary}
+\subtitle{Adaptive EEG-to-Spike Framework}
+\author{
+  Bala Mosay J \quad (2023BTIA029) \\[2pt]
+  Allwyn Jeffo Raj A \quad (2023BTIA002)
+}
+\institute{Under the guidance of Dr.\ Vaibhav Meshram}
+\date{September 2, 2026}
+
+\begin{document}
+
+\begin{frame}
+\titlepage
+\end{frame}
+
+\begin{frame}{What We Coded: Data Pipeline}
+
+\small
+\textbf{5 files handle all data loading and cleaning:}
+
+\vspace{4pt}
+\begin{itemize}
+  \item \texttt{loader.py} --- Downloads brain data from PhysioNet for 103 subjects
+  \item \texttt{preprocessing.py} --- Cleans signals: bandpass filter, ICA, epoching, AutoReject
+  \item \texttt{events.py} --- Labels each trial (left hand, right hand, feet, rest)
+  \item \texttt{balancer.py} --- Makes sure all classes have equal trial counts
+  \item \texttt{normalization.py} --- Scales data per subject (z-score, feature scaling)
+\end{itemize}
+
+\vspace{4pt}
+All 103 subjects' cleaned data is cached so preprocessing only runs once.
+
+\end{frame}
+
+\begin{frame}{What We Coded: Features + SNN}
+
+\small
+\textbf{7 files build the feature extractor and the brain-like AI:}
+
+\vspace{4pt}
+\begin{itemize}
+  \item \texttt{rcsp.py} --- Regularized CSP spatial filter (finds best brain patterns)
+  \item \texttt{bandpass.py} --- Applies CSP per frequency band, outputs 32 features per trial
+  \item \texttt{encoder.py} --- Converts numbers to spikes (binary 0/1 using threshold)
+  \item \texttt{lif\_net.py} --- The SNN: Linear, LIF, Dropout, Linear, LIF, Linear (64 hidden)
+  \item \texttt{trainer.py} --- Trains the network: Adam optimizer, cosine LR, gradient clipping
+  \item \texttt{evaluator.py} --- Measures accuracy, kappa, F1 score
+  \item \texttt{synops.py} --- Counts SynOps (how many neuron connections fire = energy usage)
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{What We Coded: Experiments + Tests}
+
+\small
+\textbf{3 experiment runners:}
+
+\vspace{4pt}
+\begin{itemize}
+  \item \texttt{run\_baseline.py} --- Runs full pipeline on all 103 subjects (5-fold CV)
+  \item \texttt{run\_logreg\_diagnostic.py} --- Tests simple classifier to find bottleneck
+  \item \texttt{run\_per\_subject\_diagnostic.py} --- Tests each subject individually
+\end{itemize}
+
+\vspace{6pt}
+\textbf{39 tests, all passing:}
+
+\vspace{4pt}
+\begin{itemize}
+  \item Tests for every module: no data leakage, shapes correct, encoding works
+  \item Leakage guard: label-dependent steps are fit on training folds
+  \item ICA/AutoReject run per subject before CV (transductive, label-free)
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Results So Far}
+
+\small
+\textbf{Subject-mixed trial-level evaluation (103 subjects, 5-fold CV):}
+
+\vspace{6pt}
+\begin{itemize}
+  \item Chance (random guess): 25.0\%
+  \item Our SNN (baseline): \textbf{31.8\%} +/- 1.1
+  \item LogReg (same features): \textbf{34.6\%} +/- 0.8
+\end{itemize}
+
+\vspace{6pt}
+\textbf{Key finding:}
+
+\vspace{4pt}
+\begin{itemize}
+  \item The SNN (31.8\%) is only 2.8\% behind LogReg (34.6\%) on the same features
+  \item The model is not the bottleneck --- the features are
+  \item Within a single subject, LogReg achieves 42.0\% --- features do work
+  \item Unseen-subject generalization is the challenge (LOSO pending)
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Phase 3: What's Next}
+
+\small
+\textbf{3 novel contributions to improve accuracy:}
+
+\vspace{4pt}
+\begin{enumerate}
+  \item \textbf{Adaptive Band Selection (C1)} --- Pick best frequencies per person using KNN Mutual Information instead of fixed mu/beta bands
+  \item \textbf{Learnable Spike Threshold (C2)} --- Make threshold a learnable parameter + add sparsity penalty to save energy
+  \item \textbf{Dual-Branch PLIF Network (C3)} --- Two parallel branches (fast tau=5ms, slow tau=30ms) combined with attention mechanism
+\end{enumerate}
+
+\vspace{6pt}
+\textbf{Target:}
+
+\vspace{4pt}
+\begin{itemize}
+  \item Accuracy: 55--65\% (up from 31.8\%)
+  \item Lower SynOps than baseline (more energy efficient)
+\end{itemize}
+
+\end{frame}
+
+\end{document}

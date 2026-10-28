@@ -1,0 +1,282 @@
+\documentclass[10pt]{beamer}
+
+% --- Theme ---
+\usetheme{Madrid}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{\hfill\insertframenumber/\inserttotalframenumber\hspace*{5pt}\vspace{2pt}}
+
+% --- Packages ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+
+% ============================================================
+\title{Adaptive EEG-to-Spike Framework}
+\subtitle{Brain Wave Classification using Spiking Neural Networks}
+\author{
+  Bala Mosay J \quad (2023BTIA029) \\[2pt]
+  Allwyn Jeffo Raj A \quad (2023BTIA002)
+}
+\institute{Under the guidance of Dr.\ Vaibhav Meshram}
+\date{September 2, 2026}
+
+\begin{document}
+
+% ============================================================
+\begin{frame}
+\titlepage
+\end{frame}
+
+% ============================================================
+\begin{frame}{What We Are Building}
+
+\small
+\begin{itemize}
+  \item A system that reads brain waves and guesses what the person is imagining
+  \item The person imagines moving their left hand, right hand, feet, or just resting
+  \item We use 64 electrodes on the scalp to capture brain signals
+  \item The signals are processed by a \textbf{Spiking Neural Network} (SNN) --- an AI that works like a real brain
+  \item SNNs use \textbf{spikes} (tiny pulses) instead of constant numbers, so they use much less energy
+  \item This makes them ideal for battery-powered wearable devices
+\end{itemize}
+
+\end{frame}
+
+% ============================================================
+\begin{frame}{The 6-Stage Pipeline}
+
+\small
+\begin{enumerate}
+  \item \textbf{Clean the Data} --- Remove noise, eye blinks, and muscle artifacts from raw brain recordings
+  \item \textbf{Extract Features} --- Find the most useful patterns in the cleaned signals using CSP (Common Spatial Patterns)
+  \item \textbf{Pick Best Frequencies} --- Select the frequency bands (mu: 8--12\,Hz, beta: 13--30\,Hz) that carry the most information
+  \item \textbf{Convert to Spikes} --- Turn regular numbers into binary spikes (0 or 1) using a threshold
+  \item \textbf{SNN Classifies} --- Feed spikes into a Spiking Neural Network that votes over 16 timesteps
+  \item \textbf{Train and Evaluate} --- Teach the network using labeled examples, then test on unseen data
+\end{enumerate}
+
+\vspace{4pt}
+Each stage is a separate Python module. The full pipeline runs with one command.
+
+\end{frame}
+
+% ============================================================
+\begin{frame}{Code: Data Processing}
+
+\small
+\textbf{5 files handle all data loading and cleaning:}
+
+\vspace{4pt}
+\begin{tabular}{ll}
+\toprule
+\textbf{File} & \textbf{What It Does} \\
+\midrule
+\texttt{loader.py} & Downloads brain data from PhysioNet for all 103 subjects \\
+\texttt{preprocessing.py} & Applies bandpass filter, ICA, epoching, AutoReject \\
+\texttt{events.py} & Labels each trial with the correct class (left/right/feet/rest) \\
+\texttt{balancer.py} & Ensures equal number of trials per class \\
+\texttt{normalization.py} & Scales data so all subjects are comparable \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+All 103 subjects' cleaned data is cached in \texttt{outputs/preprocessed/} so preprocessing only runs once.
+
+\end{frame}
+
+% ============================================================
+\begin{frame}{Code: Feature Extraction}
+
+\small
+\textbf{2 files extract useful patterns from brain signals:}
+
+\vspace{4pt}
+\begin{tabular}{ll}
+\toprule
+\textbf{File} & \textbf{What It Does} \\
+\midrule
+\texttt{rcsp.py} & Implements Regularized CSP (spatial filter) \\
+\texttt{bandpass.py} & Applies CSP per frequency band, computes log-variance \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+\textbf{The key equation (CSP features):}
+\vspace{-2pt}
+\[
+f_b = \log\!\left(\mathrm{Var}(\text{filtered\_signal}_b) + \epsilon\right)
+\]
+
+\vspace{-4pt}
+Translation: ``For each frequency band, measure how much the signal varies, then take the logarithm.''
+
+\vspace{4pt}
+Result: \textbf{32 features} per trial (2 bands $\times$ 4 classes $\times$ 4 spatial filters).
+
+\end{frame}
+
+% ============================================================
+\begin{frame}{Code: SNN Model}
+
+\small
+\textbf{2 files build the brain-like AI:}
+
+\vspace{4pt}
+\begin{tabular}{ll}
+\toprule
+\textbf{File} & \textbf{What It Does} \\
+\midrule
+\texttt{encoder.py} & Converts feature numbers into binary spikes (0/1) \\
+\texttt{lif_net.py} & Implements the LIF (Leaky Integrate-and-Fire) network \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+\textbf{The key equation (LIF neuron):}
+\vspace{-2pt}
+\[
+V[t] = V[t\!-\!1] \times \left(1 - \frac{1}{\tau}\right) + \text{input}[t]
+\]
+
+\vspace{-4pt}
+Translation: ``A neuron accumulates input in a bucket. The bucket leaks slowly. When it is full, the neuron fires a spike and empties.''
+
+\vspace{4pt}
+Architecture: Linear(32$\to$64) $\to$ LIF $\to$ Dropout(0.5) $\to$ Linear(64$\to$32) $\to$ LIF $\to$ Linear(32$\to$4).
+
+\end{frame}
+
+% ============================================================
+\begin{frame}{Code: Training \& Evaluation}
+
+\small
+\textbf{3 files handle training, testing, and energy measurement:}
+
+\vspace{4pt}
+\begin{tabular}{ll}
+\toprule
+\textbf{File} & \textbf{What It Does} \\
+\midrule
+\texttt{trainer.py} & Trains the SNN using Adam optimizer + cosine LR schedule \\
+\texttt{evaluator.py} & Computes accuracy, kappa, F1 score \\
+\texttt{synops.py} & Counts Synaptic Operations (energy proxy) \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+\textbf{The key equation (SynOps --- energy metric):}
+\vspace{-2pt}
+\[
+\text{SynOps} = \sum_{l=1}^{L} \text{fanout}_l \times \bar{s}_l
+\]
+
+\vspace{-4pt}
+Translation: ``Count how many neuron connections fire on average. Fewer spikes = less energy.''
+
+\vspace{4pt}
+Baseline SynOps: \textbf{0.72 per trial}. Target after Phase 3: lower.
+
+\end{frame}
+
+% ============================================================
+\begin{frame}{39 Tests Pass}
+
+\small
+\textbf{Every module has unit tests.} We ran all 39 tests --- all pass.
+
+\vspace{4pt}
+\begin{tabular}{ll}
+\toprule
+\textbf{Test File} & \textbf{What It Checks} \\
+\midrule
+\texttt{test\_preprocessing.py} & Filtering works, correct number of epochs \\
+\texttt{test\_rcsp.py} & CSP filters are different across folds (no leakage) \\
+\texttt{test\_encoder.py} & Spikes are binary, density near 25\% \\
+\texttt{test\_lif\_net.py} & Output shape correct, membrane stays positive \\
+\texttt{test\_trainer.py} & Loss decreases during training \\
+\texttt{test\_synops.py} & SynOps are non-negative and consistent \\
+\texttt{test\_no\_leakage.py} & Train/test parameters never mix \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+\textbf{No data leakage} is enforced by design: z-score, CSP filters, feature scaling, and threshold are all fit on the training fold only.
+
+\end{frame}
+
+% ============================================================
+\begin{frame}{Results So Far}
+
+\small
+\textbf{Subject-mixed trial-level evaluation (103 subjects, 5-fold CV):}
+
+\vspace{6pt}
+\begin{tabular}{lr}
+\toprule
+\textbf{Classifier} & \textbf{Accuracy} \\
+\midrule
+Chance (random guess) & 25.0\% \\
+Our SNN (baseline) & \textbf{31.8\%} $\pm$ 1.1 \\
+LogReg (same features) & 34.6\% $\pm$ 0.8 \\
+\bottomrule
+\end{tabular}
+
+\vspace{6pt}
+\textbf{Key finding:} The SNN (31.8\%) is only 2.8\% behind LogReg (34.6\%) on the same features. The model is not the bottleneck --- the features are.
+
+\vspace{4pt}
+Within a single subject, LogReg achieves \textbf{42.0\%} --- the features do work. This
+subject-mixed comparison is not a leave-one-subject-out result.
+
+\end{frame}
+
+% ============================================================
+\begin{frame}{Bottleneck Analysis}
+
+\small
+\textbf{Why is accuracy low?}
+
+\vspace{4pt}
+\begin{itemize}
+  \item Subject-mixed accuracy (34.6\%) is much lower than within-subject (42.0\%)
+  \item Different people's brains produce different patterns for the same task
+  \item Fixed frequency bands (mu: 8--12\,Hz, beta: 13--30\,Hz) don't work equally well for everyone
+  \item The CSP features appear subject-specific; LOSO is needed to confirm transfer
+\end{itemize}
+
+\vspace{4pt}
+\textbf{This is exactly what Phase 3 addresses:}
+
+\vspace{4pt}
+\begin{itemize}
+  \item \textbf{C1 (Adaptive Bands):} Pick the best frequencies for each person
+  \item \textbf{C2 (Learnable Threshold):} Let the AI find the optimal spike threshold
+  \item \textbf{C3 (PLIF Network):} Use fast and slow neurons to capture different time scales
+\end{itemize}
+
+\vspace{4pt}
+Target: 55--65\% accuracy with lower energy.
+
+\end{frame}
+
+% ============================================================
+\begin{frame}{Thank You}
+
+\begin{center}
+\vspace{10pt}
+{\Large\textbf{Thank You}}\\[12pt]
+{\large Questions \& Discussion}
+
+\vspace{20pt}
+\textbf{Team:}\\
+Bala Mosay J \quad (2023BTIA029)\\
+Allwyn Jeffo Raj A \quad (2023BTIA002)
+
+\vspace{10pt}
+\textbf{Guide:}\\
+Dr.\ Vaibhav Meshram
+\end{center}
+
+\end{frame}
+
+\end{document}

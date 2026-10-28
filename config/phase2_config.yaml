@@ -1,0 +1,71 @@
+# Phase 2 — Baseline SNN Configuration
+# All hyperparameters for reproducibility.
+# Baseline = fixed bands + fixed threshold + single-tau LIF.
+# Phase 3 replaces: bands (adaptive KNN-MI), threshold (learnable),
+#                   network (dual-branch PLIF), adds lambda_spike.
+
+experiment:
+  name: baseline_snn
+  seed: 42
+  device: auto        # auto = cuda if available else cpu
+
+data:
+  excluded_subjects:
+    - S038
+    - S088
+    - S089
+    - S092
+    - S100
+    - S104
+  n_subjects: 103
+  cache_dir: outputs/preprocessed   # per-subject preprocessing cache (npz)
+  sfreq: 160
+
+balancing:
+  strategy: cap_to_min     # cap rest to min(MI class counts) per subject
+  random_state: 42
+
+features:
+  type: fixed_band_csp     # per-band RCSP (FBCSP pattern, fixed bands)
+  bands:
+    - [mu, 8.0, 12.0]      # fixed for all subjects
+    - [beta, 13.0, 30.0]   # fixed for all subjects
+  n_components: 4          # CSP components per class (OvR), per band
+  # NOTE: Phase 3 replaces these with per-subject adaptive KNN-MI bands
+
+encoder:
+  type: fixed_threshold    # threshold = mean of train-fold features
+  T: 16                    # timesteps
+  # NOTE: Phase 3 replaces with learnable_threshold
+
+snn:
+  type: baseline_lif       # single fixed tau
+  n_hidden: 64
+  tau: 20.0                # single speed for all neurons
+  dropout: 0.5
+  # NOTE: Phase 3 replaces with dual_branch_plif (tau_fast=5ms, tau_slow=30ms)
+
+training:
+  n_epochs: 100
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  max_grad_norm: 5.0
+  lambda_spike: 0.0        # NO spike regularisation in baseline
+  # NOTE: Phase 3 adds lambda_spike warm-up schedule
+
+evaluation:
+  cv_folds: 5
+  cv_type: subject_mixed   # trials pooled across subjects, split by trials
+  metrics:
+    - accuracy
+    - cohen_kappa
+    - f1_per_class
+    - f1_macro
+    - synops_per_trial
+    - spike_density
+
+results:
+  output_dir: results/baseline/
+  save_fold_results: true
+  save_confusion_matrix: true

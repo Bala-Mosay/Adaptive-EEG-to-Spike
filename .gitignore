@@ -1,0 +1,69 @@
+# ---------------------------------------------------------------------------
+# Generated data and caches (regenerable; >2 GB)
+# ---------------------------------------------------------------------------
+outputs/
+eegmmidb/
+mne_data/
+*.npz
+*.pt
+*.pth
+*.ckpt
+*.edf
+*.bdf
+*.fif
+*.set
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+
+# ---------------------------------------------------------------------------
+# Notebooks and run logs
+# ---------------------------------------------------------------------------
+.ipynb_checkpoints/
+notebooks/*.png
+*.log
+results/*.txt
+
+# ---------------------------------------------------------------------------
+# Local tooling and OS files
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+opencode.json
+.env
+.env.*
+
+# ---------------------------------------------------------------------------
+# Third-party reference papers (kept local, not distributed)
+# ---------------------------------------------------------------------------
+refence paper/
+
+# ---------------------------------------------------------------------------
+# Local development scratch
+# ---------------------------------------------------------------------------
+src/data/A
+diagnose.py
+check_summary.py
+phase 2 plan.md.txt
+phase1_data_pipeline_prompt.md
+.github/agents/

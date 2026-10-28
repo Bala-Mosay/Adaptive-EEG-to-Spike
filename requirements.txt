@@ -1,0 +1,10 @@
+mne
+numpy
+scipy
+scikit-learn
+pyyaml
+autoreject
+torch
+spikingjelly
+pandas
+matplotlib

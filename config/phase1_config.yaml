@@ -1,0 +1,36 @@
+seed: 42
+excluded_subjects:
+  - S038
+  - S088
+  - S089
+  - S092
+  - S100
+  - S104
+bandpass:
+  l_freq: 0.5
+  h_freq: 40.0
+  method: iir
+  iir_params:
+    order: 4
+    ftype: butter
+ica:
+  n_components: 20
+  random_state: 42
+epoch:
+  tmin: -0.2
+  tmax: 4.0
+  baseline: [-0.2, 0.0]
+reject:
+  low: 8.0
+  high: 30.0
+  threshold_uv: 100.0
+rcsp:
+  n_components: 4
+  use_ledoit_wolf: true
+cv:
+  n_splits: 5
+  random_state: 42
+diagnostic: true
+bad_channel_detection:
+  enabled: true
+  percent_threshold: 50.0
