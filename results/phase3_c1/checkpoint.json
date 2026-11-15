@@ -1,0 +1,20 @@
+{
+  "config_fingerprint": "ffadd79d4d707f74",
+  "effective_epochs": 100,
+  "requested_folds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "completed_folds": [
+    0,
+    1,
+    2
+  ],
+  "n_subjects_loaded": 103,
+  "n_trials_total": 8672,
+  "feature_dim": null,
+  "updated_at": "2026-11-10 10:35:38"
+}

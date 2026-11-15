@@ -1,0 +1,1077 @@
+{
+  "fold": 1,
+  "metrics": {
+    "fold": 1,
+    "accuracy": 0.30662824207492795,
+    "kappa": 0.07484303352533506,
+    "f1_macro": 0.2999354325876598,
+    "synops_per_trial": 1238.875,
+    "spike_density": 0.0385589599609375,
+    "n_trials_test": 1735,
+    "f1_left_hand": 0.20851688693098386,
+    "f1_right_hand": 0.3453981385729059,
+    "f1_feet": 0.3363028953229399,
+    "f1_rest": 0.30952380952380953
+  },
+  "confusion_matrix": [
+    [
+      71,
+      130,
+      97,
+      129
+    ],
+    [
+      65,
+      167,
+      108,
+      124
+    ],
+    [
+      61,
+      104,
+      151,
+      115
+    ],
+    [
+      57,
+      102,
+      111,
+      143
+    ]
+  ],
+  "feature_dim": 48,
+  "selected_bands": {
+    "S001": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S002": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S003": [
+      "theta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S004": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S005": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S006": [
+      "theta",
+      "mu",
+      "low_gamma"
+    ],
+    "S007": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S008": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S009": [
+      "theta",
+      "low_beta",
+      "high_beta"
+    ],
+    "S010": [
+      "low_beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S011": [
+      "theta",
+      "high_beta",
+      "gamma"
+    ],
+    "S012": [
+      "theta",
+      "low_beta",
+      "gamma"
+    ],
+    "S013": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S014": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S015": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S016": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S017": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S018": [
+      "theta",
+      "mu",
+      "gamma"
+    ],
+    "S019": [
+      "theta",
+      "low_beta",
+      "high_beta"
+    ],
+    "S020": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S021": [
+      "theta",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S022": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S023": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S024": [
+      "mu",
+      "low_gamma",
+      "gamma"
+    ],
+    "S025": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S026": [
+      "beta",
+      "high_beta",
+      "gamma"
+    ],
+    "S027": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S028": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S029": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S030": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S031": [
+      "mu",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S032": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S033": [
+      "mu",
+      "high_beta",
+      "gamma"
+    ],
+    "S034": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S035": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S036": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S037": [
+      "mu",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S039": [
+      "beta",
+      "high_beta",
+      "gamma"
+    ],
+    "S040": [
+      "theta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S041": [
+      "low_beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S042": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S043": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S044": [
+      "theta",
+      "beta",
+      "gamma"
+    ],
+    "S045": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S046": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S047": [
+      "mu",
+      "low_gamma",
+      "gamma"
+    ],
+    "S048": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S049": [
+      "low_beta",
+      "beta",
+      "low_gamma"
+    ],
+    "S050": [
+      "beta",
+      "high_beta",
+      "gamma"
+    ],
+    "S051": [
+      "theta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S052": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S053": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S054": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S055": [
+      "low_beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S056": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S057": [
+      "mu",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S058": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S059": [
+      "theta",
+      "mu",
+      "high_beta"
+    ],
+    "S060": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S061": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S062": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S063": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S064": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S065": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S066": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S067": [
+      "mu",
+      "beta",
+      "gamma"
+    ],
+    "S068": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S069": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S070": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S071": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S072": [
+      "mu",
+      "beta",
+      "high_beta"
+    ],
+    "S073": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S074": [
+      "theta",
+      "beta",
+      "high_beta"
+    ],
+    "S075": [
+      "theta",
+      "mu",
+      "high_beta"
+    ],
+    "S076": [
+      "mu",
+      "beta",
+      "low_gamma"
+    ],
+    "S077": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S078": [
+      "low_beta",
+      "beta",
+      "low_gamma"
+    ],
+    "S079": [
+      "beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S080": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S081": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S082": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S083": [
+      "mu",
+      "beta",
+      "gamma"
+    ],
+    "S084": [
+      "mu",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S085": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S086": [
+      "theta",
+      "beta",
+      "high_beta"
+    ],
+    "S087": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S090": [
+      "theta",
+      "beta",
+      "high_beta"
+    ],
+    "S091": [
+      "theta",
+      "beta",
+      "gamma"
+    ],
+    "S093": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S094": [
+      "low_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S095": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S096": [
+      "theta",
+      "beta",
+      "gamma"
+    ],
+    "S097": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S098": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S099": [
+      "theta",
+      "mu",
+      "high_beta"
+    ],
+    "S101": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S102": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S103": [
+      "mu",
+      "low_gamma",
+      "gamma"
+    ],
+    "S105": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S106": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S107": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S108": [
+      "mu",
+      "beta",
+      "high_beta"
+    ],
+    "S109": [
+      "theta",
+      "beta",
+      "high_beta"
+    ]
+  },
+  "test_subject_bands": {
+    "S001": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S002": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S003": [
+      "theta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S004": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S005": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S006": [
+      "theta",
+      "mu",
+      "low_gamma"
+    ],
+    "S007": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S008": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S009": [
+      "theta",
+      "low_beta",
+      "high_beta"
+    ],
+    "S010": [
+      "low_beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S011": [
+      "theta",
+      "high_beta",
+      "gamma"
+    ],
+    "S012": [
+      "theta",
+      "low_beta",
+      "gamma"
+    ],
+    "S013": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S014": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S015": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S016": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S017": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S018": [
+      "theta",
+      "mu",
+      "gamma"
+    ],
+    "S019": [
+      "theta",
+      "low_beta",
+      "high_beta"
+    ],
+    "S020": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S021": [
+      "theta",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S022": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S023": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S024": [
+      "mu",
+      "low_gamma",
+      "gamma"
+    ],
+    "S025": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S026": [
+      "beta",
+      "high_beta",
+      "gamma"
+    ],
+    "S027": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S028": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S029": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S030": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S031": [
+      "mu",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S032": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S033": [
+      "mu",
+      "high_beta",
+      "gamma"
+    ],
+    "S034": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S035": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S036": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S037": [
+      "mu",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S039": [
+      "beta",
+      "high_beta",
+      "gamma"
+    ],
+    "S040": [
+      "theta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S041": [
+      "low_beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S042": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S043": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S044": [
+      "theta",
+      "beta",
+      "gamma"
+    ],
+    "S045": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S046": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S047": [
+      "mu",
+      "low_gamma",
+      "gamma"
+    ],
+    "S048": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S049": [
+      "low_beta",
+      "beta",
+      "low_gamma"
+    ],
+    "S050": [
+      "beta",
+      "high_beta",
+      "gamma"
+    ],
+    "S051": [
+      "theta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S052": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S053": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S054": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S055": [
+      "low_beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S056": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S057": [
+      "mu",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S058": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S059": [
+      "theta",
+      "mu",
+      "high_beta"
+    ],
+    "S060": [
+      "mu",
+      "low_beta",
+      "low_gamma"
+    ],
+    "S061": [
+      "mu",
+      "low_beta",
+      "beta"
+    ],
+    "S062": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S063": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S064": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S065": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S066": [
+      "high_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S067": [
+      "mu",
+      "beta",
+      "gamma"
+    ],
+    "S068": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S069": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S070": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S071": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S072": [
+      "mu",
+      "beta",
+      "high_beta"
+    ],
+    "S073": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S074": [
+      "theta",
+      "beta",
+      "high_beta"
+    ],
+    "S075": [
+      "theta",
+      "mu",
+      "high_beta"
+    ],
+    "S076": [
+      "mu",
+      "beta",
+      "low_gamma"
+    ],
+    "S077": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S078": [
+      "low_beta",
+      "beta",
+      "low_gamma"
+    ],
+    "S079": [
+      "beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S080": [
+      "low_beta",
+      "beta",
+      "high_beta"
+    ],
+    "S081": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S082": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S083": [
+      "mu",
+      "beta",
+      "gamma"
+    ],
+    "S084": [
+      "mu",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S085": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S086": [
+      "theta",
+      "beta",
+      "high_beta"
+    ],
+    "S087": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S090": [
+      "theta",
+      "beta",
+      "high_beta"
+    ],
+    "S091": [
+      "theta",
+      "beta",
+      "gamma"
+    ],
+    "S093": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S094": [
+      "low_beta",
+      "low_gamma",
+      "gamma"
+    ],
+    "S095": [
+      "mu",
+      "low_beta",
+      "high_beta"
+    ],
+    "S096": [
+      "theta",
+      "beta",
+      "gamma"
+    ],
+    "S097": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S098": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S099": [
+      "theta",
+      "mu",
+      "high_beta"
+    ],
+    "S101": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S102": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S103": [
+      "mu",
+      "low_gamma",
+      "gamma"
+    ],
+    "S105": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S106": [
+      "beta",
+      "high_beta",
+      "low_gamma"
+    ],
+    "S107": [
+      "theta",
+      "mu",
+      "low_beta"
+    ],
+    "S108": [
+      "mu",
+      "beta",
+      "high_beta"
+    ],
+    "S109": [
+      "theta",
+      "beta",
+      "high_beta"
+    ]
+  }
+}

@@ -3,6 +3,24 @@ import numpy as np
 import mne
 
 
+def detect_bad_channels(
+    channel_names: List[str],
+    over_pct: List[Tuple[str, float]],
+    percent_threshold: float,
+) -> List[str]:
+    """Flag channels exceeding ``percent_threshold`` in at least that many epochs.
+
+    A guard is essential: if the threshold is exceeded by *every* channel
+    (e.g. a subject with a global high-amplitude artifact), interpolation has
+    no reference sensors and would replace the whole recording with zeros.
+    In that case return no bad channels and leave the data untouched.
+    """
+    bads = [ch for ch, pct in over_pct if pct >= percent_threshold]
+    if len(bads) >= len(channel_names):
+        return []
+    return bads
+
+
 class Preprocessor:
     """Stage 1 signal conditioning pipeline.
 
@@ -218,7 +236,7 @@ class Preprocessor:
             # pct_thr may be given as fraction (0-1) or percent (1-100)
             if pct_thr <= 1.0:
                 pct_thr = pct_thr * 100.0
-            bads = [ch for ch, pct in over_pct if pct >= pct_thr]
+            bads = detect_bad_channels(ch_names, over_pct, pct_thr)
             if bads:
                 if diag:
                     print('Detected bad channels (>= {:.1f}% epochs over threshold): {}'.format(pct_thr, bads))

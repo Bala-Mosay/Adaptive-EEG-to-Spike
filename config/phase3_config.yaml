@@ -1,0 +1,84 @@
+# Phase 3 — Contribution 1 (adaptive KNN-MI band selection)
+# Controlled checkpoint: same fixed-threshold encoder and baseline LIF as
+# Phase 2; the only change is the per-subject top-3 band selection.
+#
+# C2 (learnable threshold) and C3 (dual-branch PLIF + joint loss) will be
+# added to this config as separate sections in the next Phase 3 steps.
+
+experiment:
+  name: phase3_c1_adaptive_bands
+  seed: 42
+  device: auto        # auto = cuda if available else cpu
+
+data:
+  excluded_subjects:
+    - S038
+    - S088
+    - S089
+    - S092
+    - S100
+    - S104
+  n_subjects: 103
+  cache_dir: outputs/preprocessed   # validated per-subject preprocessing cache
+  sfreq: 160
+
+balancing:
+  strategy: cap_to_min
+  random_state: 42
+
+features:
+  type: adaptive_band_csp
+  # Seven non-overlapping 4 Hz bands covering 4-32 Hz.
+  # This is a 4 Hz step, not a 2 Hz step (which would give 13 bands).
+  band_bank:
+    - [theta, 4.0, 8.0]
+    - [mu, 8.0, 12.0]
+    - [low_beta, 12.0, 16.0]
+    - [beta, 16.0, 20.0]
+    - [high_beta, 20.0, 24.0]
+    - [low_gamma, 24.0, 28.0]
+    - [gamma, 28.0, 32.0]
+  top_k: 3
+  n_components: 4
+  band_selection:
+    method: knn_mi
+    n_neighbors: 5
+    min_trials_per_subject: 20
+    fallback: global_top_k
+
+encoder:
+  type: fixed_threshold    # C1 checkpoint keeps the Phase 2 encoder
+  T: 16
+
+snn:
+  type: baseline_lif       # C1 checkpoint keeps the Phase 2 network
+  n_hidden: 64
+  tau: 20.0
+  dropout: 0.5
+
+training:
+  n_epochs: 100
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  max_grad_norm: 5.0
+  lambda_spike: 0.0
+
+evaluation:
+  cv_folds: 5
+  cv_type: subject_mixed
+  metrics:
+    - accuracy
+    - cohen_kappa
+    - f1_per_class
+    - f1_macro
+    - synops_per_trial
+    - spike_density
+
+results:
+  output_dir: results/phase3_c1/
+  save_fold_results: true
+  save_confusion_matrix: true
+  save_predictions: true
+  save_selected_bands: true
+  save_config: true

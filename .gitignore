@@ -39,6 +39,7 @@ dist/
 notebooks/*.png
 *.log
 results/*.txt
+results/smoke/
 
 # ---------------------------------------------------------------------------
 # Local tooling and OS files

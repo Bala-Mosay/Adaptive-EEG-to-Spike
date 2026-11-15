@@ -5,7 +5,7 @@ Baseline loss is CrossEntropy ONLY — no spike-count regularisation
 (Eq. 10/13 of the research paper) is Phase 3 Contribution 2.
 """
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
 import torch
@@ -144,6 +144,7 @@ class BaselineTrainer:
         X_val: Optional[np.ndarray] = None,
         y_val: Optional[np.ndarray] = None,
         verbose: bool = False,
+        progress_callback: Optional[Callable[[int, Dict[str, float]], None]] = None,
     ) -> List[Dict[str, float]]:
         """Full training run; returns the per-epoch history.
 
@@ -155,6 +156,10 @@ class BaselineTrainer:
             Optional validation set for per-epoch accuracy tracking.
         verbose : bool
             Print progress every 10 epochs.
+        progress_callback : callable, optional
+            Called as ``callback(epoch, record)`` after each epoch. Used by
+            the experiment runner to render a status bar without changing
+            training behaviour.
         """
         history: List[Dict[str, float]] = []
         for epoch in range(self.config.n_epochs):
@@ -164,6 +169,8 @@ class BaselineTrainer:
                 val_out = self.evaluate(X_val, y_val)
                 record["val_acc"] = float(np.mean(val_out["predictions"] == y_val))
             history.append(record)
+            if progress_callback is not None:
+                progress_callback(epoch, record)
             if verbose and epoch % 10 == 0:
                 msg = f"Epoch {epoch:3d} | CE={record['ce_loss']:.4f}"
                 if X_val is not None:

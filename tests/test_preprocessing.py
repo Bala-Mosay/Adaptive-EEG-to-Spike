@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import numpy as np
 import mne
 import pytest
-from src.data.preprocessing import Preprocessor
+from src.data.preprocessing import Preprocessor, detect_bad_channels
 
 
 def test_bandpass_filter():
@@ -75,6 +75,19 @@ def test_epoching_trial_count():
     assert len(epochs) == 5
     assert len(epochs["left_hand"]) == 3
     assert len(epochs["right_hand"]) == 2
+
+
+def test_detect_bad_channels_flags_only_subset():
+    names = ["Fz", "Cz", "Pz"]
+    over_pct = [("Fz", 100.0), ("Cz", 60.0), ("Pz", 10.0)]
+    assert detect_bad_channels(names, over_pct, 50.0) == ["Fz", "Cz"]
+
+
+def test_detect_bad_channels_never_flags_all():
+    """All-bad must not trigger interpolation (S091 regression guard)."""
+    names = ["Fz", "Cz", "Pz"]
+    over_pct = [("Fz", 100.0), ("Cz", 60.0), ("Pz", 51.0)]
+    assert detect_bad_channels(names, over_pct, 50.0) == []
 
 
 def test_autoreject_reject_log_labels():

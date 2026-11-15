@@ -47,6 +47,22 @@ def test_evaluate_returns_predictions():
     assert out["total_spike_count"] >= 0.0
 
 
+def test_fit_progress_callback_receives_every_epoch():
+    """The status-bar callback must be invoked once per epoch."""
+    X = np.random.randn(16, 8).astype(np.float32)
+    y = np.array([0] * 8 + [1] * 8, dtype=np.int64)
+    model = BaselineLIFNet(n_features=8, n_hidden=16, n_classes=2, T=4)
+    cfg = TrainingConfig(n_epochs=3, batch_size=8, T=4, random_state=0, device="cpu")
+    calls = []
+
+    BaselineTrainer(model, cfg).fit(
+        X, y, progress_callback=lambda epoch, record: calls.append((epoch, record["ce_loss"]))
+    )
+
+    assert [epoch for epoch, _ in calls] == [0, 1, 2]
+    assert all(loss >= 0.0 for _, loss in calls)
+
+
 def test_trainer_deterministic():
     """Two identical runs with same seed must produce same loss history."""
     X = np.random.randn(40, 8).astype(np.float32)
