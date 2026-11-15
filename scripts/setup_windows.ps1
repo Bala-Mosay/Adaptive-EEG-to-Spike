@@ -40,6 +40,9 @@ Write-Host "Installing dependencies (first install can take several minutes)..."
 Write-Host ""
 Write-Host "=== Verifying environment and data ==="
 & $venvPython (Join-Path $repoRoot "scripts\verify_setup.py")
+if ($LASTEXITCODE -ne 0) {
+    throw "Setup verification failed. Fix the messages above before running the experiment."
+}
 
 if (-not $SkipTests) {
     Write-Host ""
