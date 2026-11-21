@@ -7,8 +7,10 @@ logistic regression on the *same* folds.  Phase 2 showed the SNN tracks the
 linear classifier closely on identical features (31.8% vs 34.6%), so this is a
 cheap screen, not a replacement for the SNN run.
 
-The expensive step (7-band CSP filtering) is done once per fold; every
-condition is then a column subset of the same full-bank feature matrix.
+The expensive step (7-band CSP filtering) is done once per fold and **cached**
+in ``--features-dir``; every condition is then a column subset, a per-subject
+scaling, or an offset of the same full-bank matrix.  Re-scoring a cached fold
+takes seconds instead of ~22 minutes.
 
 Conditions
 ----------
@@ -19,10 +21,11 @@ Conditions
 ``adaptive5``          Per-subject KNN-MI top-5 (80 dims)
 ``sensorimotor3``      Fixed mu + low_beta + beta (48 dims)
 ``guarded_adaptive``   Always mu + beta, plus the best remaining band (48 dims)
-``soft_u_l030``        Soft weights, lambda=0.3, shrunk to uniform (112 dims)
-``soft_u_l060``        Soft weights, lambda=0.6, shrunk to uniform (112 dims)
-``soft_g_l030``        Soft weights, lambda=0.3, shrunk to global (112 dims)
-``soft_g_l060``        Soft weights, lambda=0.6, shrunk to global (112 dims)
+``soft_u_l###``        Soft weights, shrunk to uniform, lambda = 0.15..0.60
+``soft_g_l###``        Soft weights, shrunk to global, lambda = 0.15..0.60
+``soft_shuf_u_l030``   Same weights, band correspondence permuted (control)
+``subject_band_center``  Per-subject per-band mean offset, no MI (ablation)
+``subject_band_zscore``  Per-subject per-band per-column z-score (ablation)
 ======================  ====================================================
 
 The soft conditions keep all seven bands and scale each subject's band blocks
@@ -30,10 +33,21 @@ by mean-one weights, so they cannot delete a band the way ``adaptive3``/
 ``adaptive5`` do.  ``lambda=0`` with ``shrink_to="uniform"`` reproduces
 ``all7`` bitwise; the script asserts that every fold before scoring.
 
+Why the ablations matter
+------------------------
+CSP features are log-variance, so scaling a band by ``w`` is *exactly* adding
+``2*log(w)`` to every component in that block.  Soft weighting is therefore a
+per-subject, per-band additive offset.  ``subject_band_center`` expresses the
+same family with **no MI ranking at all**, and ``soft_shuf_u_l030`` keeps the
+weight distribution but destroys which band got which weight.  If either
+matches the soft conditions, the gain comes from per-subject band calibration
+rather than from adaptive band ranking.
+
 Usage::
 
-    python scripts/screen_band_conditions.py --folds 0
-    python scripts/screen_band_conditions.py --folds 0,1 --json results/band_screen.json
+    python scripts/screen_band_conditions.py --folds 0,1,2
+    python scripts/screen_band_conditions.py --folds 0,1,2 --json results/band_screen.json
+    python scripts/screen_band_conditions.py --folds 0 --recompute
 """
 from __future__ import annotations
 
@@ -67,6 +81,34 @@ SENSORIMOTOR = ("mu", "low_beta", "beta")
 #: Softmax temperature for the soft band-weighting conditions.  Kept fixed
 #: across the screen so that only lambda and the shrinkage target vary.
 SOFT_TEMPERATURE = 1.0
+
+#: (lambda, shrink_to) grid for the soft conditions.  ``lambda=0`` is skipped
+#: because it is already scored as ``all7`` and is asserted to be identical.
+SOFT_GRID: List[Tuple[float, str]] = [
+    (0.15, "uniform"),
+    (0.30, "uniform"),
+    (0.45, "uniform"),
+    (0.60, "uniform"),
+    (0.15, "global"),
+    (0.30, "global"),
+    (0.45, "global"),
+    (0.60, "global"),
+]
+
+#: Bump when the cached array layout changes, so stale caches are ignored.
+CACHE_VERSION = 1
+
+#: Arrays stored per fold; everything else is derived from them.
+CACHE_KEYS = (
+    "F_train_all",
+    "F_test_all",
+    "F_broad_train",
+    "F_broad_test",
+    "y_train",
+    "y_test",
+    "subj_train",
+    "subj_test",
+)
 
 
 def load_dataset(
@@ -155,6 +197,99 @@ def apply_band_weights(
         mask = subject_array == subject
         for index, name in enumerate(band_names):
             out[mask, slices[name]] *= weight_vector[index]
+    return out
+
+
+def per_subject_band_center(
+    F_train: np.ndarray,
+    F_test: np.ndarray,
+    subj_train: np.ndarray,
+    subj_test: np.ndarray,
+    slices: Dict[str, slice],
+    band_names: Sequence[str],
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Subtract one scalar per (subject, band), estimated on training trials.
+
+    This is the additive family that soft weighting can express, computed with
+    **no mutual information and no labels**.  It is the ablation that decides
+    whether the soft gain comes from the ranking or from per-subject band
+    calibration.
+
+    The offsets are estimated from that subject's *training* trials only, which
+    keeps the transform leakage-free even though it is per subject.
+    """
+    subject_train = np.asarray(subj_train)
+    subject_test = np.asarray(subj_test)
+    out_train = F_train.copy()
+    out_test = F_test.copy()
+
+    for subject in np.unique(subject_train):
+        train_mask = subject_train == subject
+        test_mask = subject_test == subject
+        for name in band_names:
+            block = slices[name]
+            offset = float(F_train[train_mask, block].mean())
+            out_train[train_mask, block] -= offset
+            if test_mask.any():
+                out_test[test_mask, block] -= offset
+    return out_train, out_test
+
+
+def per_subject_band_zscore(
+    F_train: np.ndarray,
+    F_test: np.ndarray,
+    subj_train: np.ndarray,
+    subj_test: np.ndarray,
+    slices: Dict[str, slice],
+    band_names: Sequence[str],
+    eps: float = 1e-8,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Standardize each (subject, band, component) column using train trials.
+
+    A stronger, label-free recalibration than :func:`per_subject_band_center`:
+    it also removes per-subject differences in the *scale* of each component.
+    Statistics are estimated on training trials only.
+    """
+    subject_train = np.asarray(subj_train)
+    subject_test = np.asarray(subj_test)
+    out_train = F_train.copy()
+    out_test = F_test.copy()
+
+    for subject in np.unique(subject_train):
+        train_mask = subject_train == subject
+        test_mask = subject_test == subject
+        for name in band_names:
+            block = slices[name]
+            values = F_train[train_mask, block]
+            mean = values.mean(axis=0)
+            std = values.std(axis=0)
+            std = np.where(std < eps, 1.0, std)
+            out_train[train_mask, block] = (values - mean) / std
+            if test_mask.any():
+                out_test[test_mask, block] = (
+                    F_test[test_mask, block] - mean
+                ) / std
+    return out_train, out_test
+
+
+def permuted_weights(
+    weights: Dict[str, np.ndarray],
+    subjects: Sequence[str],
+    seed: int,
+) -> Dict[str, np.ndarray]:
+    """Return the same weight vectors with the band correspondence permuted.
+
+    This is a control with the identical *distribution* of weights: it keeps
+    how much each subject's bands are scaled, but randomly re-assigns which
+    band receives which weight.  If this scores like the real ranking, the
+    ranking is not what produces the gain.  The permutation depends only on
+    (seed, subject order), so it is reproducible.
+    """
+    out: Dict[str, np.ndarray] = {}
+    for index, subject in enumerate(sorted(str(name) for name in subjects)):
+        rng = np.random.default_rng([int(seed), index])
+        vector = np.asarray(weights[subject], dtype=float)
+        out[subject] = vector[rng.permutation(len(vector))]
     return out
 
 
@@ -257,6 +392,225 @@ class PairBandCSPExtractor:
         )
 
 
+# ---------------------------------------------------------------------------
+# Fold feature cache
+# ---------------------------------------------------------------------------
+def cache_path(features_dir: Path, fold_index: int) -> Path:
+    """Location of the cached feature arrays for one fold."""
+    return features_dir / f"fold{fold_index}_v{CACHE_VERSION}.npz"
+
+
+def save_fold_cache(path: Path, arrays: Dict[str, np.ndarray]) -> None:
+    """Write one fold's feature arrays, preserving dtype exactly."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    missing = [key for key in CACHE_KEYS if key not in arrays]
+    if missing:
+        raise ValueError(f"Missing cache arrays: {missing}")
+    np.savez(path, **{key: arrays[key] for key in CACHE_KEYS})
+
+
+def load_fold_cache(path: Path) -> Dict[str, np.ndarray]:
+    """Load one fold's feature arrays exactly as they were written."""
+    with np.load(path, allow_pickle=False) as data:
+        return {key: data[key] for key in CACHE_KEYS}
+
+
+def build_fold_features(
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    subj_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    subj_test: np.ndarray,
+    *,
+    n_components: int,
+    sfreq: float,
+    seed: int,
+) -> Dict[str, np.ndarray]:
+    """Compute the cached arrays for one fold (the expensive step)."""
+    zscore = PerSubjectZScore().fit(X_train, list(subj_train))
+    X_train = zscore.transform(X_train, list(subj_train))
+    X_test = zscore.transform(X_test, list(subj_test))
+
+    print("  extracting 7-band CSP features (single pass) ...")
+    pair = PairBandCSPExtractor(SEVEN_BANDS, n_components, sfreq, seed)
+    F_train_all, F_test_all = pair.fit_transform_pair(X_train, y_train, X_test)
+    print(f"  full-bank features: train {F_train_all.shape}, test {F_test_all.shape}")
+
+    print("  extracting broad mu/beta (Phase 2) features ...")
+    broad_pair = PairBandCSPExtractor(FIXED_BANDS, n_components, sfreq, seed)
+    F_broad_train, F_broad_test = broad_pair.fit_transform_pair(
+        X_train, y_train, X_test
+    )
+
+    return {
+        "F_train_all": F_train_all,
+        "F_test_all": F_test_all,
+        "F_broad_train": F_broad_train,
+        "F_broad_test": F_broad_test,
+        "y_train": y_train,
+        "y_test": y_test,
+        "subj_train": subj_train,
+        "subj_test": subj_test,
+    }
+
+
+def score_conditions(
+    arrays: Dict[str, np.ndarray],
+    *,
+    n_components: int,
+    seed: int,
+    sel_cfg: dict,
+    n_classes: int,
+) -> Dict[str, Tuple[np.ndarray, np.ndarray]]:
+    """Build every condition's (train, test) matrices from cached features."""
+    F_train_all = arrays["F_train_all"]
+    F_test_all = arrays["F_test_all"]
+    y_train = arrays["y_train"]
+    subj_train = np.asarray(arrays["subj_train"])
+    subj_test = np.asarray(arrays["subj_test"])
+
+    band_names = [name for name, _, _ in SEVEN_BANDS]
+    slices = band_slices(band_names, n_classes * n_components)
+
+    band_features_train = {
+        name: F_train_all[:, slices[name]] for name in band_names
+    }
+    # Subject-mixed CV keeps every test subject in the training fold, but
+    # resolve both sides explicitly so an unseen subject cannot KeyError.
+    seen_subjects = np.unique(np.concatenate([subj_train, subj_test]))
+
+    def selector_for(k: int) -> AdaptiveBandSelector:
+        return AdaptiveBandSelector(
+            top_k=k,
+            n_neighbors=int(sel_cfg.get("n_neighbors", 5)),
+            min_trials=int(sel_cfg.get("min_trials_per_subject", 20)),
+            random_state=seed,
+        ).fit(band_features_train, y_train, subj_train)
+
+    conditions: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
+
+    # Phase 2 reference features (different band definitions).
+    conditions["broad_mu_beta"] = (
+        arrays["F_broad_train"],
+        arrays["F_broad_test"],
+    )
+
+    # All seven bands, no selection.
+    conditions["all7"] = (F_train_all, F_test_all)
+
+    # Adaptive C1 and a wider top-5 variant.
+    print("  ranking bands (top-3 / top-5) ...")
+    for label, k in (("adaptive3", 3), ("adaptive5", 5)):
+        selector = selector_for(k)
+        selection = {
+            str(subject): selector.get_bands(str(subject))
+            for subject in seen_subjects
+        }
+        conditions[label] = (
+            per_subject_matrix(F_train_all, subj_train, selection, slices),
+            per_subject_matrix(F_test_all, np.asarray(arrays["subj_test"]), selection, slices),
+        )
+
+    # Fixed sensorimotor triple.
+    fixed_cols = columns_for(list(SENSORIMOTOR), slices)
+    conditions["sensorimotor3"] = (
+        F_train_all[:, fixed_cols], F_test_all[:, fixed_cols]
+    )
+
+    # Adaptive with mu+beta pinned.
+    guarded = guarded_selection(selector_for(3), seen_subjects, k=3)
+    conditions["guarded_adaptive"] = (
+        per_subject_matrix(F_train_all, subj_train, guarded, slices),
+        per_subject_matrix(F_test_all, np.asarray(arrays["subj_test"]), guarded, slices),
+    )
+
+    # --- soft adaptive weighting ------------------------------------------
+    # Every band is kept; each subject's blocks are scaled by mean-one
+    # weights shrunk toward a stable prior.  lambda=0 must reproduce the
+    # unweighted full bank exactly, which is asserted below.
+    print("  fitting soft band weights ...")
+    soft_weights: Dict[str, Dict[str, np.ndarray]] = {}
+    for lam, shrink in SOFT_GRID:
+        label = f"soft_{shrink[0]}_l{int(round(lam * 100)):03d}"
+        weighter = SoftBandWeighter(
+            lambda_=lam,
+            temperature=SOFT_TEMPERATURE,
+            shrink_to=shrink,
+            n_neighbors=int(sel_cfg.get("n_neighbors", 5)),
+            min_trials=int(sel_cfg.get("min_trials_per_subject", 20)),
+            random_state=seed,
+        ).fit(band_features_train, y_train, subj_train)
+        weights = {
+            str(subject): weighter.get_weights(str(subject))
+            for subject in seen_subjects
+        }
+        soft_weights[label] = weights
+        conditions[label] = (
+            apply_band_weights(F_train_all, subj_train, weights, slices, band_names),
+            apply_band_weights(
+                F_test_all, np.asarray(arrays["subj_test"]), weights, slices, band_names
+            ),
+        )
+
+    # Control: identical weight distribution, permuted band correspondence.
+    shuffled = permuted_weights(soft_weights["soft_u_l030"], seen_subjects, seed)
+    conditions["soft_shuf_u_l030"] = (
+        apply_band_weights(F_train_all, subj_train, shuffled, slices, band_names),
+        apply_band_weights(
+            F_test_all, np.asarray(arrays["subj_test"]), shuffled, slices, band_names
+        ),
+    )
+
+    # Ablations: per-subject band calibration with no MI at all.
+    conditions["subject_band_center"] = per_subject_band_center(
+        F_train_all,
+        F_test_all,
+        subj_train,
+        np.asarray(arrays["subj_test"]),
+        slices,
+        band_names,
+    )
+    conditions["subject_band_zscore"] = per_subject_band_zscore(
+        F_train_all,
+        F_test_all,
+        subj_train,
+        np.asarray(arrays["subj_test"]),
+        slices,
+        band_names,
+    )
+
+    # Nesting guard: lambda=0 with a uniform prior is exactly `all7`.
+    nest = SoftBandWeighter(
+        lambda_=0.0,
+        temperature=SOFT_TEMPERATURE,
+        shrink_to="uniform",
+        n_neighbors=int(sel_cfg.get("n_neighbors", 5)),
+        min_trials=int(sel_cfg.get("min_trials_per_subject", 20)),
+        random_state=seed,
+    ).fit(band_features_train, y_train, subj_train)
+    nest_weights = {
+        str(subject): nest.get_weights(str(subject)) for subject in seen_subjects
+    }
+    nest_train = apply_band_weights(
+        F_train_all, subj_train, nest_weights, slices, band_names
+    )
+    nest_test = apply_band_weights(
+        F_test_all, np.asarray(arrays["subj_test"]), nest_weights, slices, band_names
+    )
+    if not (
+        np.array_equal(nest_train, F_train_all)
+        and np.array_equal(nest_test, F_test_all)
+    ):
+        raise RuntimeError(
+            "Nesting check failed: soft weights with lambda=0 must "
+            "reproduce the unweighted all7 features exactly"
+        )
+    print("  nesting check ok: lambda=0 == all7 (bitwise)")
+
+    return conditions
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=str(ROOT / "config" / "phase3_config.yaml"))
@@ -265,6 +619,16 @@ def main() -> int:
     )
     parser.add_argument("--folds", default="0", help="Comma-separated fold indices")
     parser.add_argument("--json", default=None, help="Optional path for JSON output")
+    parser.add_argument(
+        "--features-dir",
+        default=str(ROOT / "results" / "band_screen_cache"),
+        help="Where per-fold feature arrays are cached (empty string disables)",
+    )
+    parser.add_argument(
+        "--recompute",
+        action="store_true",
+        help="Ignore existing caches and re-extract features",
+    )
     args = parser.parse_args()
 
     with open(args.config, encoding="utf-8") as fh:
@@ -281,183 +645,116 @@ def main() -> int:
     n_classes = 4
 
     fold_indices = [int(value) for value in args.folds.split(",")]
+    features_dir = Path(args.features_dir) if args.features_dir else None
+    if features_dir is not None and not features_dir.is_absolute():
+        features_dir = ROOT / features_dir
 
-    print("=== Loading subjects ===")
-    started = time.time()
-    X_all, y_all, subj_all = load_dataset(config, preprocess_cfg, cache_dir)
-    print(f"loaded {len(y_all)} trials in {time.time() - started:.0f}s")
+    # Only touch the EEG data when at least one fold is not cached.
+    cached = {}
+    if features_dir is not None and not args.recompute:
+        for fold_index in fold_indices:
+            path = cache_path(features_dir, fold_index)
+            if path.exists():
+                cached[fold_index] = load_fold_cache(path)
+                print(f"using cached features: {path.name}")
+    needs_extraction = len(cached) < len(fold_indices)
 
-    splits = subject_mixed_kfold(
-        n_splits=int(config["evaluation"]["cv_folds"]), random_state=seed
-    ).split(X_all, y_all, subj_all)
+    splits = None
+    if needs_extraction:
+        print("=== Loading subjects ===")
+        started = time.time()
+        X_all, y_all, subj_all = load_dataset(config, preprocess_cfg, cache_dir)
+        print(f"loaded {len(y_all)} trials in {time.time() - started:.0f}s")
+        splits = list(
+            subject_mixed_kfold(
+                n_splits=int(config["evaluation"]["cv_folds"]), random_state=seed
+            ).split(X_all, y_all, subj_all)
+        )
 
     results: Dict[str, Dict[int, dict]] = {}
 
-    for fold_index, (train_idx, test_idx) in enumerate(splits):
-        if fold_index not in fold_indices:
-            continue
+    for fold_index in fold_indices:
         fold_started = time.time()
-        print(f"\n=== Fold {fold_index} (train {len(train_idx)} | test {len(test_idx)}) ===")
+        print(f"\n=== Fold {fold_index} ===")
 
-        X_train, X_test = X_all[train_idx], X_all[test_idx]
-        y_train, y_test = y_all[train_idx], y_all[test_idx]
-        subj_train, subj_test = subj_all[train_idx], subj_all[test_idx]
-
-        zscore = PerSubjectZScore().fit(X_train, list(subj_train))
-        X_train = zscore.transform(X_train, list(subj_train))
-        X_test = zscore.transform(X_test, list(subj_test))
-
-        # --- one expensive full-bank pass, reused by every narrow-band condition
-        print("  extracting 7-band CSP features (single pass) ...")
-        pair = PairBandCSPExtractor(SEVEN_BANDS, n_components, sfreq, seed)
-        F_train_all, F_test_all = pair.fit_transform_pair(X_train, y_train, X_test)
-        base = pair.extractor
-        band_names = [name for name, _, _ in base.bands_]
-        slices = band_slices(band_names, n_classes * n_components)
-        print(f"  full-bank features: train {F_train_all.shape}, test {F_test_all.shape}")
-
-        band_features_train = {
-            name: F_train_all[:, slices[name]] for name in band_names
-        }
-        # Subject-mixed CV keeps every test subject in the training fold, but
-        # resolve both sides explicitly so an unseen subject cannot KeyError.
-        seen_subjects = np.unique(np.concatenate([subj_train, subj_test]))
-
-        def selector_for(k: int) -> AdaptiveBandSelector:
-            return AdaptiveBandSelector(
-                top_k=k,
-                n_neighbors=int(sel_cfg.get("n_neighbors", 5)),
-                min_trials=int(sel_cfg.get("min_trials_per_subject", 20)),
-                random_state=seed,
-            ).fit(band_features_train, y_train, subj_train)
-
-        print("  ranking bands (top-3 / top-5) ...")
-        selector3 = selector_for(3)
-        selector5 = selector_for(5)
-
-        conditions: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
-
-        # Phase 2 reference features (different band definitions).
-        print("  extracting broad mu/beta (Phase 2) features ...")
-        broad_pair = PairBandCSPExtractor(FIXED_BANDS, n_components, sfreq, seed)
-        F_broad_train, F_broad_test = broad_pair.fit_transform_pair(
-            X_train, y_train, X_test
-        )
-        conditions["broad_mu_beta"] = (F_broad_train, F_broad_test)
-
-        # All seven bands, no selection.
-        conditions["all7"] = (F_train_all, F_test_all)
-
-        # Adaptive C1 and a wider top-5 variant.
-        for label, selector in (("adaptive3", selector3), ("adaptive5", selector5)):
-            selection = {
-                str(subject): selector.get_bands(str(subject))
-                for subject in seen_subjects
-            }
-            conditions[label] = (
-                per_subject_matrix(F_train_all, subj_train, selection, slices),
-                per_subject_matrix(F_test_all, subj_test, selection, slices),
+        if fold_index in cached:
+            arrays = cached[fold_index]
+            print(
+                f"  cached: train {arrays['F_train_all'].shape} "
+                f"test {arrays['F_test_all'].shape}"
             )
-
-        # Fixed sensorimotor triple.
-        fixed_cols = columns_for(list(SENSORIMOTOR), slices)
-        conditions["sensorimotor3"] = (
-            F_train_all[:, fixed_cols], F_test_all[:, fixed_cols]
-        )
-
-        # Adaptive with mu+beta pinned.
-        guarded = guarded_selection(selector3, seen_subjects, k=3)
-        conditions["guarded_adaptive"] = (
-            per_subject_matrix(F_train_all, subj_train, guarded, slices),
-            per_subject_matrix(F_test_all, subj_test, guarded, slices),
-        )
-
-        # --- soft adaptive weighting (revised contribution) ------------------
-        # Every band is kept; each subject's blocks are scaled by mean-one
-        # weights shrunk toward a stable prior.  lambda=0 must reproduce the
-        # unweighted full bank exactly, which is asserted below.
-        print("  fitting soft band weights ...")
-        soft_specs = {
-            "soft_u_l030": (0.3, "uniform"),
-            "soft_u_l060": (0.6, "uniform"),
-            "soft_g_l030": (0.3, "global"),
-            "soft_g_l060": (0.6, "global"),
-        }
-        soft_weights: Dict[str, Dict[str, np.ndarray]] = {}
-        for label, (lam, shrink) in soft_specs.items():
-            weighter = SoftBandWeighter(
-                lambda_=lam,
-                temperature=SOFT_TEMPERATURE,
-                shrink_to=shrink,
-                n_neighbors=int(sel_cfg.get("n_neighbors", 5)),
-                min_trials=int(sel_cfg.get("min_trials_per_subject", 20)),
-                random_state=seed,
-            ).fit(band_features_train, y_train, subj_train)
-            weights = {
-                str(subject): weighter.get_weights(str(subject))
-                for subject in seen_subjects
-            }
-            soft_weights[label] = weights
-            conditions[label] = (
-                apply_band_weights(F_train_all, subj_train, weights, slices, band_names),
-                apply_band_weights(F_test_all, subj_test, weights, slices, band_names),
+        else:
+            train_idx, test_idx = splits[fold_index]
+            print(f"  train {len(train_idx)} | test {len(test_idx)}")
+            arrays = build_fold_features(
+                X_all[train_idx],
+                y_all[train_idx],
+                subj_all[train_idx],
+                X_all[test_idx],
+                y_all[test_idx],
+                subj_all[test_idx],
+                n_components=n_components,
+                sfreq=sfreq,
+                seed=seed,
             )
+            if features_dir is not None:
+                path = cache_path(features_dir, fold_index)
+                save_fold_cache(path, arrays)
+                print(f"  cached features written: {path.name}")
 
-        # Nesting guard: lambda=0 with a uniform prior is exactly `all7`.
-        nest_weighter = SoftBandWeighter(
-            lambda_=0.0,
-            temperature=SOFT_TEMPERATURE,
-            shrink_to="uniform",
-            n_neighbors=int(sel_cfg.get("n_neighbors", 5)),
-            min_trials=int(sel_cfg.get("min_trials_per_subject", 20)),
-            random_state=seed,
-        ).fit(band_features_train, y_train, subj_train)
-        nest_weights = {
-            str(subject): nest_weighter.get_weights(str(subject))
-            for subject in seen_subjects
-        }
-        nest_train = apply_band_weights(
-            F_train_all, subj_train, nest_weights, slices, band_names
+        conditions = score_conditions(
+            arrays,
+            n_components=n_components,
+            seed=seed,
+            sel_cfg=sel_cfg,
+            n_classes=n_classes,
         )
-        nest_test = apply_band_weights(
-            F_test_all, subj_test, nest_weights, slices, band_names
-        )
-        if not (
-            np.array_equal(nest_train, F_train_all)
-            and np.array_equal(nest_test, F_test_all)
-        ):
-            raise RuntimeError(
-                "Nesting check failed: soft weights with lambda=0 must "
-                "reproduce the unweighted all7 features exactly"
-            )
-        print("  nesting check ok: lambda=0 == all7 (bitwise)")
 
+        y_train = arrays["y_train"]
+        y_test = arrays["y_test"]
         print(f"  scoring {len(conditions)} conditions ...")
         for label, (F_tr, F_te) in conditions.items():
             metrics = evaluate(F_tr, y_train, F_te, y_test)
             results.setdefault(label, {})[fold_index] = metrics
             print(
-                f"    {label:<18} acc={metrics['accuracy']:.4f} "
+                f"    {label:<22} acc={metrics['accuracy']:.4f} "
                 f"kappa={metrics['kappa']:.4f} f1={metrics['f1_macro']:.4f} "
                 f"dims={metrics['n_features']}"
             )
-
-        del X_train, X_test, F_train_all, F_test_all, base, pair, broad_pair
+        del conditions
         print(f"  fold {fold_index} finished in {time.time() - fold_started:.0f}s")
 
     # --- summary -----------------------------------------------------------
+    def mean_metric(label: str, key: str) -> float:
+        return float(np.mean([m[key] for m in results[label].values()]))
+
     print("\n=== Summary (mean over evaluated folds) ===")
-    print(f"{'condition':<20}{'accuracy':>10}{'kappa':>9}{'f1_macro':>10}{'dims':>6}")
-    for label, per_fold in sorted(
-        results.items(), key=lambda item: -np.mean([m["accuracy"] for m in item[1].values()])
-    ):
-        accs = [m["accuracy"] for m in per_fold.values()]
-        kappas = [m["kappa"] for m in per_fold.values()]
-        f1s = [m["f1_macro"] for m in per_fold.values()]
-        dims = int(next(iter(per_fold.values()))["n_features"])
+    print(f"{'condition':<22}{'accuracy':>10}{'kappa':>9}{'f1_macro':>10}{'dims':>6}")
+    for label in sorted(results, key=lambda name: -mean_metric(name, "accuracy")):
+        dims = int(next(iter(results[label].values()))["n_features"])
         print(
-            f"{label:<20}{np.mean(accs):>10.4f}{np.mean(kappas):>9.4f}"
-            f"{np.mean(f1s):>10.4f}{dims:>6}"
+            f"{label:<22}{mean_metric(label, 'accuracy'):>10.4f}"
+            f"{mean_metric(label, 'kappa'):>9.4f}"
+            f"{mean_metric(label, 'f1_macro'):>10.4f}{dims:>6}"
+        )
+
+    # The family average is the honest summary: picking the best of eight
+    # lambdas after the fact would inflate the reported gain.
+    soft_labels = [
+        label for label in results if label.startswith("soft_") and "shuf" not in label
+    ]
+    if soft_labels:
+        family = float(
+            np.mean(
+                [
+                    np.mean([m["accuracy"] for m in results[label].values()])
+                    for label in soft_labels
+                ]
+            )
+        )
+        print(
+            f"\n{'soft family mean':<22}{family:>10.4f}"
+            f"  ({len(soft_labels)} lambda/prior settings, not post-hoc selected)"
         )
 
     if args.json:

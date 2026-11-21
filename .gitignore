@@ -69,3 +69,4 @@ check_summary.py
 phase 2 plan.md.txt
 phase1_data_pipeline_prompt.md
 .github/agents/
+results/*.logpath

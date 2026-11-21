@@ -67,6 +67,8 @@ $proc = Start-Process -FilePath $python `
     -PassThru
 
 $proc.Id | Set-Content -Path $pidFile -Encoding ascii
+# Remember which log this run writes, so check_band_screen.ps1 finds it.
+$stdout | Set-Content -Path (Join-Path $resultsDir "band_screen.logpath") -Encoding ascii
 Start-Sleep -Seconds 3
 $proc.Refresh()
 if ($proc.HasExited) {

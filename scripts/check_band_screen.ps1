@@ -30,6 +30,11 @@ if ($proc) {
 
 Write-Host ""
 Write-Host "--- log (last 25 lines) ---"
+$logPathFile = Join-Path $repoRoot "results/band_screen.logpath"
+if (Test-Path $logPathFile) {
+    $recorded = (Get-Content $logPathFile | Select-Object -First 1).Trim()
+    if ($recorded) { $LogFile = $recorded }
+}
 if (-not (Test-Path $LogFile)) {
     # The first launcher build advertised this name but wrote stdout.log.
     $fallback = Join-Path $repoRoot "results/band_screen_stdout.log"
