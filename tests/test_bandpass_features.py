@@ -38,6 +38,24 @@ def test_fixed_band_csp_features_output_shape():
     assert feats.shape == (40, expected)
 
 
+def test_chunked_band_filtering_is_bitwise_identical(monkeypatch):
+    """Chunking trials to bound memory must not change filtering results."""
+    from src.features import bandpass as bp
+
+    X, _ = _make_epochs(n_per_class=8, n_ch=4, n_times=200, seed=3)
+    extractor = FixedBandCSPFeatures(bands=FIXED_BANDS[:1], n_components=2, sfreq=160.0)
+    band = FIXED_BANDS[0]
+
+    monkeypatch.setattr(bp, "FILTER_CHUNK_TRIALS", len(X) + 1)
+    full = extractor._band_filtered(X, band)
+
+    monkeypatch.setattr(bp, "FILTER_CHUNK_TRIALS", 7)
+    chunked = extractor._band_filtered(X, band)
+
+    assert full.shape == chunked.shape == X.shape
+    assert np.array_equal(full, chunked), "chunked filtering changed the values"
+
+
 def test_leakage_guard_fit_train_vs_full():
     """CSP fitted on train subset must differ from full-data fit."""
     X, y = _make_epochs(n_per_class=12, n_ch=8, n_times=100)

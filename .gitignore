@@ -40,6 +40,7 @@ notebooks/*.png
 *.log
 results/*.txt
 results/smoke/
+results/*.pid
 
 # ---------------------------------------------------------------------------
 # Local tooling and OS files

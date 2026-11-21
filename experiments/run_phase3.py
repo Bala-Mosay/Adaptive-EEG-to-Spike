@@ -60,7 +60,15 @@ from src.snn.synops import count_synops
 from src.snn.trainer import BaselineTrainer, TrainingConfig
 from src.utils.seed import seed_everything
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+# ``force=True`` is required: some imported libraries call
+# ``logging.basicConfig()`` at import time, which makes a plain
+# ``basicConfig(level=INFO)`` a no-op and leaves the root logger at WARNING.
+# Without the force, every ``log.info`` progress line is silently dropped.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    force=True,
+)
 log = logging.getLogger(__name__)
 
 _CHECKPOINT_FILE = "checkpoint.json"
@@ -113,9 +121,22 @@ class _StatusBar:
         self.start = time.time()
 
     def update(self, n: int, suffix: str = "") -> None:
-        if not self.enabled:
-            return
         n = max(0, min(int(n), self.total))
+        if not self.enabled:
+            # Non-interactive stream (background run, redirected output): the
+            # bar cannot render, so log coarse progress instead of nothing.
+            step = max(1, self.total // 10)
+            if n == self.total or (n > 0 and n % step == 0):
+                extra = f" | {suffix}" if suffix else ""
+                log.info(
+                    "%s: %d/%d (%.0f%%)%s",
+                    self.label,
+                    n,
+                    self.total,
+                    100.0 * n / self.total,
+                    extra,
+                )
+            return
         frac = n / self.total
         filled = int(self.width * frac)
         bar = "=" * filled + "-" * (self.width - filled)
@@ -432,6 +453,10 @@ def run_phase3_cv(
     X_all = np.concatenate(X_parts, axis=0)
     y_all = np.concatenate(y_parts, axis=0)
     subjects_all = np.concatenate(subj_parts)
+    # Each subject array is held separately above; once concatenated into the
+    # full (n_trials, n_channels, n_timepoints) float32 block they would double
+    # the resident trial memory for the rest of the run.  Release them now.
+    del X_parts, y_parts, subj_parts
     log.info(
         "Loaded %d subjects | %d trials | class counts: %s",
         n_ok,
@@ -659,6 +684,11 @@ def run_phase3_cv(
             result.spike_density,
             F_train.shape[1],
         )
+
+        # Release per-fold buffers before the next fold allocates its own
+        # ~1.5 GB train/test copies.  ``y_test``/``subj_test`` stay alive
+        # through the prediction lists appended above.
+        del X_train, X_test, y_train, subj_train, F_train, F_test, extractor
 
     fold_bar.close()
 

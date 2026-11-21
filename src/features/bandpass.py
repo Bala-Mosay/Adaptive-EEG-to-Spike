@@ -25,6 +25,15 @@ FIXED_BANDS: List[Tuple[str, float, float]] = [
     ("beta", 13.0, 30.0),
 ]
 
+#: Trials filtered per chunk in :meth:`FixedBandCSPFeatures._band_filtered`.
+#: MNE's ``filter_data`` FIR path upcasts to float64 and allocates an output
+#: array of the same size, so filtering a whole fold at once needs ~4x the
+#: float32 trial memory and OOMs on 16 GB machines.  Each trial/channel row is
+#: filtered independently along time, so chunking the row axis is bitwise
+#: identical to filtering everything at once (verified by test) and only
+#: changes the peak memory.
+FILTER_CHUNK_TRIALS = 128
+
 
 def extract_band_features(
     X: np.ndarray,
@@ -111,16 +120,36 @@ class FixedBandCSPFeatures(BaseEstimator, TransformerMixin):
         self.random_state = random_state
 
     def _band_filtered(self, X: np.ndarray, band: Tuple[str, float, float]) -> np.ndarray:
+        """Bandpass-filter epochs, chunked over trials to bound peak memory.
+
+        See :data:`FILTER_CHUNK_TRIALS` for why chunking is bitwise safe.
+        """
         _, low, high = band
-        n_trials, n_ch, _ = X.shape
-        return filter_data(
-            X.reshape(n_trials * n_ch, -1).astype(np.float64),
-            sfreq=self.sfreq,
-            l_freq=low,
-            h_freq=high,
-            method="fir",
-            verbose=False,
-        ).reshape(n_trials, n_ch, -1)
+        n_trials, n_ch, n_times = X.shape
+
+        if n_trials <= FILTER_CHUNK_TRIALS:
+            return filter_data(
+                X.reshape(n_trials * n_ch, n_times).astype(np.float64),
+                sfreq=self.sfreq,
+                l_freq=low,
+                h_freq=high,
+                method="fir",
+                verbose=False,
+            ).reshape(n_trials, n_ch, n_times)
+
+        out = np.empty((n_trials, n_ch, n_times), dtype=np.float64)
+        for start in range(0, n_trials, FILTER_CHUNK_TRIALS):
+            stop = min(start + FILTER_CHUNK_TRIALS, n_trials)
+            filtered = filter_data(
+                X[start:stop].reshape((stop - start) * n_ch, n_times).astype(np.float64),
+                sfreq=self.sfreq,
+                l_freq=low,
+                h_freq=high,
+                method="fir",
+                verbose=False,
+            )
+            out[start:stop] = filtered.reshape(stop - start, n_ch, n_times)
+        return out
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "FixedBandCSPFeatures":
         """Fit one RegularizedCSP per band on the training data.

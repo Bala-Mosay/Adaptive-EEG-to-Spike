@@ -10,9 +10,14 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Set-Location $repoRoot
 
-$venvPython = Join-Path $repoRoot $VenvDir "Scripts\python.exe"
+$venvPython = Join-Path $repoRoot "$VenvDir\Scripts\python.exe"
 if (-not (Test-Path $venvPython)) {
-    throw "Virtual environment not found. Run scripts\setup_windows.ps1 first."
+    $systemPython = Get-Command python -ErrorAction SilentlyContinue
+    if (-not $systemPython) {
+        throw "No virtual environment and no 'python' on PATH. Run scripts\setup_windows.ps1 first."
+    }
+    $venvPython = $systemPython.Source
+    Write-Warning "No .venv found; using system Python: $venvPython"
 }
 
 $checkpoint = Join-Path $repoRoot "results\phase3_c1\checkpoint.json"
