@@ -19,7 +19,16 @@ Conditions
 ``adaptive5``          Per-subject KNN-MI top-5 (80 dims)
 ``sensorimotor3``      Fixed mu + low_beta + beta (48 dims)
 ``guarded_adaptive``   Always mu + beta, plus the best remaining band (48 dims)
+``soft_u_l030``        Soft weights, lambda=0.3, shrunk to uniform (112 dims)
+``soft_u_l060``        Soft weights, lambda=0.6, shrunk to uniform (112 dims)
+``soft_g_l030``        Soft weights, lambda=0.3, shrunk to global (112 dims)
+``soft_g_l060``        Soft weights, lambda=0.6, shrunk to global (112 dims)
 ======================  ====================================================
+
+The soft conditions keep all seven bands and scale each subject's band blocks
+by mean-one weights, so they cannot delete a band the way ``adaptive3``/
+``adaptive5`` do.  ``lambda=0`` with ``shrink_to="uniform"`` reproduces
+``all7`` bitwise; the script asserts that every fold before scoring.
 
 Usage::
 
@@ -45,6 +54,7 @@ sys.path.insert(0, str(ROOT))
 
 from src.bands.bank import SEVEN_BANDS  # noqa: E402
 from src.bands.selector import AdaptiveBandSelector  # noqa: E402
+from src.bands.soft_weights import SoftBandWeighter  # noqa: E402
 from src.cv.splits import subject_mixed_kfold  # noqa: E402
 from src.data.balancer import balance_classes  # noqa: E402
 from src.data.cache import load_or_process_subject  # noqa: E402
@@ -53,6 +63,10 @@ from src.features.bandpass import FIXED_BANDS, FixedBandCSPFeatures  # noqa: E40
 
 #: Bands that motor-imagery literature (and the Phase 2 baseline) rely on.
 SENSORIMOTOR = ("mu", "low_beta", "beta")
+
+#: Softmax temperature for the soft band-weighting conditions.  Kept fixed
+#: across the screen so that only lambda and the shrinkage target vary.
+SOFT_TEMPERATURE = 1.0
 
 
 def load_dataset(
@@ -117,6 +131,30 @@ def per_subject_matrix(
         mask = subject_array == subject
         cols = columns_for(selected[str(subject)], slices)
         out[mask] = F_all[mask][:, cols]
+    return out
+
+
+def apply_band_weights(
+    F_all: np.ndarray,
+    subjects: np.ndarray,
+    weights: Dict[str, np.ndarray],
+    slices: Dict[str, slice],
+    band_names: Sequence[str],
+) -> np.ndarray:
+    """Scale each subject's band blocks by its mean-one weight vector.
+
+    With all weights equal to 1 this returns the unweighted matrix, which is
+    exactly the ``all7`` control.
+    """
+    subject_array = np.asarray(subjects)
+    out = F_all.copy()
+    for subject in np.unique(subject_array):
+        weight_vector = weights.get(str(subject))
+        if weight_vector is None:
+            continue
+        mask = subject_array == subject
+        for index, name in enumerate(band_names):
+            out[mask, slices[name]] *= weight_vector[index]
     return out
 
 
@@ -333,6 +371,66 @@ def main() -> int:
             per_subject_matrix(F_train_all, subj_train, guarded, slices),
             per_subject_matrix(F_test_all, subj_test, guarded, slices),
         )
+
+        # --- soft adaptive weighting (revised contribution) ------------------
+        # Every band is kept; each subject's blocks are scaled by mean-one
+        # weights shrunk toward a stable prior.  lambda=0 must reproduce the
+        # unweighted full bank exactly, which is asserted below.
+        print("  fitting soft band weights ...")
+        soft_specs = {
+            "soft_u_l030": (0.3, "uniform"),
+            "soft_u_l060": (0.6, "uniform"),
+            "soft_g_l030": (0.3, "global"),
+            "soft_g_l060": (0.6, "global"),
+        }
+        soft_weights: Dict[str, Dict[str, np.ndarray]] = {}
+        for label, (lam, shrink) in soft_specs.items():
+            weighter = SoftBandWeighter(
+                lambda_=lam,
+                temperature=SOFT_TEMPERATURE,
+                shrink_to=shrink,
+                n_neighbors=int(sel_cfg.get("n_neighbors", 5)),
+                min_trials=int(sel_cfg.get("min_trials_per_subject", 20)),
+                random_state=seed,
+            ).fit(band_features_train, y_train, subj_train)
+            weights = {
+                str(subject): weighter.get_weights(str(subject))
+                for subject in seen_subjects
+            }
+            soft_weights[label] = weights
+            conditions[label] = (
+                apply_band_weights(F_train_all, subj_train, weights, slices, band_names),
+                apply_band_weights(F_test_all, subj_test, weights, slices, band_names),
+            )
+
+        # Nesting guard: lambda=0 with a uniform prior is exactly `all7`.
+        nest_weighter = SoftBandWeighter(
+            lambda_=0.0,
+            temperature=SOFT_TEMPERATURE,
+            shrink_to="uniform",
+            n_neighbors=int(sel_cfg.get("n_neighbors", 5)),
+            min_trials=int(sel_cfg.get("min_trials_per_subject", 20)),
+            random_state=seed,
+        ).fit(band_features_train, y_train, subj_train)
+        nest_weights = {
+            str(subject): nest_weighter.get_weights(str(subject))
+            for subject in seen_subjects
+        }
+        nest_train = apply_band_weights(
+            F_train_all, subj_train, nest_weights, slices, band_names
+        )
+        nest_test = apply_band_weights(
+            F_test_all, subj_test, nest_weights, slices, band_names
+        )
+        if not (
+            np.array_equal(nest_train, F_train_all)
+            and np.array_equal(nest_test, F_test_all)
+        ):
+            raise RuntimeError(
+                "Nesting check failed: soft weights with lambda=0 must "
+                "reproduce the unweighted all7 features exactly"
+            )
+        print("  nesting check ok: lambda=0 == all7 (bitwise)")
 
         print(f"  scoring {len(conditions)} conditions ...")
         for label, (F_tr, F_te) in conditions.items():

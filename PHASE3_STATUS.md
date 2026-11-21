@@ -7,6 +7,11 @@ Phase 2 fixed-band baseline**; the evidence and the likely cause are documented 
 Contributions 2 (learnable spike threshold) and 3 (dual-timescale PLIF with attention
 fusion) are **not started**.
 
+A **revised Contribution 1** (soft per-subject band weighting, which keeps every band
+and shrinks the weights toward a stable prior) is implemented and under screening —
+see *Revised contribution* below. The original hard top-3 result is unchanged and
+stays in the record as a negative result.
+
 Last updated: 2026-11-21.
 
 ## Deliverables
@@ -151,6 +156,69 @@ The linear classifier is a **proxy**, not a substitute: on identical features Ph
 measured 34.6% (LogReg) vs 31.8% (SNN). It is used to rank candidates cheaply; the
 winning condition still needs a full SNN run for the thesis number.
 
+### Screen result (folds 0–1, `results/band_screen_folds01.json`)
+
+| Condition | Fold 0 | Fold 1 | Mean | Dims |
+|---|---:|---:|---:|---:|
+| `all7` | 36.89% | 38.39% | **37.64%** | 112 |
+| `adaptive5` | 35.79% | 38.33% | 37.06% | 80 |
+| `adaptive3` (C1) | 34.18% | 37.35% | 35.76% | 48 |
+| `sensorimotor3` | 35.22% | 35.50% | 35.36% | 48 |
+| `broad_mu_beta` (Phase 2 features) | 35.27% | 34.64% | 34.96% | 32 |
+| `guarded_adaptive` | 34.47% | 34.52% | 34.50% | 48 |
+
+Three findings, all consistent across both folds:
+
+1. **The 7-band bank is not the problem.** `all7` beats the Phase 2 feature set by
+   +2.7 points, so splitting mu/beta into narrower bands helps rather than hurts.
+2. **Hard selection is the problem.** Accuracy is monotone in the number of bands
+   kept (3 < 5 < 7), i.e. every band discarded costs information.
+3. **Pinning mu+beta does not rescue it.** `guarded_adaptive` is last, so the loss is
+   not merely "the ranking drops the literature bands".
+
+Conclusion: with ~70 training trials per subject, a hard keep/drop decision is the
+wrong instrument. This motivates soft weighting below.
+
+## Revised contribution: soft adaptive band weighting
+
+`src/bands/soft_weights.py` (`SoftBandWeighter`) and
+`src/features/soft_adaptive_bands.py` (`SoftAdaptiveBandCSPFeatures`) keep every band
+and instead scale each subject's band blocks by **mean-one** weights:
+
+```
+w = (1 - lambda) * prior + lambda * softmax(z / temperature)
+```
+
+- `z` is the subject's KNN-MI score vector standardized over bands.
+- `prior` is either uniform (`shrink_to="uniform"`) or the all-subject soft
+  weights (`shrink_to="global"`, i.e. hierarchical shrinkage).
+- `temperature` controls how peaky the adaptive part can become.
+
+Because the weights are a convex combination of two mean-one vectors, the method
+**nests both extremes**: `lambda = 0` with `shrink_to="uniform"` is bitwise equal to
+the unweighted `all7` control, while `lambda = 1` with a small temperature collapses
+onto the best-ranked band — the same failure mode as hard top-1. Adaptation strength
+is therefore a tunable dial rather than a discrete, irreversible choice.
+
+Leakage contract: `fit` sees only training-fold trials, labels, and subject IDs; the
+weights are frozen at fit time and `transform` only looks them up. Subjects with
+fewer than `min_trials` (default 20) fall back to the prior, which is exactly "no
+adaptation". Guards live in `tests/test_soft_bands.py`, including a bitwise
+`lambda = 0 == all7` check on the real CSP path.
+
+Screened conditions (same folds, same logistic-regression proxy):
+
+| Condition | `lambda` | Prior |
+|---|---:|---|
+| `soft_u_l030` | 0.3 | uniform |
+| `soft_u_l060` | 0.6 | uniform |
+| `soft_g_l030` | 0.3 | global |
+| `soft_g_l060` | 0.6 | global |
+
+`scripts/screen_band_conditions.py` additionally asserts the nesting identity on every
+fold before scoring, so a broken `lambda = 0` path aborts the run instead of producing
+silently wrong numbers.
+
 ## Caveats
 
 - **Subject-mixed trial-level CV, not LOSO.** Test folds contain trials from subjects
@@ -188,6 +256,20 @@ winning condition still needs a full SNN run for the thesis number.
 python -u experiments/run_phase3.py --config config/phase3_config.yaml \
     --log-file results/phase3_c1_run.log --resume
 python scripts/analyze_phase3_bands.py --json results/phase3_c1/band_diagnostics.json
+```
+
+Band-condition screen (detached; survives closing the terminal or the display):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run_band_screen_background.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\check_band_screen.ps1
+```
+
+Direct invocation with a chosen fold list:
+
+```bash
+python -u scripts/screen_band_conditions.py --folds 0,1,2 \
+    --json results/band_screen_soft_folds012.json
 ```
 
 Resume is guarded by config fingerprint `ffadd79d4d707f74` (103 subjects, 8,672

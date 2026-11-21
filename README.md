@@ -14,7 +14,7 @@ learnable spike threshold, dual-timescale PLIF network) are in progress.
 |---|---|---|
 | Phase 1 | Signal conditioning, run-aware labels, regularized CSP, CV scaffold | Complete |
 | Phase 2 | Fixed-band CSP, fixed-threshold encoder, single-tau LIF SNN, baseline CV | Complete (snapshot) |
-| Phase 3 | Adaptive KNN-MI bands, learnable threshold, dual-branch PLIF | C1 complete — see `PHASE3_STATUS.md`; C2/C3 pending |
+| Phase 3 | Adaptive KNN-MI bands, learnable threshold, dual-branch PLIF | C1 hard top-3 = negative result; C1 revised (soft weighting) in screening — see `PHASE3_STATUS.md`; C2/C3 pending |
 
 ## Pipeline
 
@@ -22,7 +22,7 @@ learnable spike threshold, dual-timescale PLIF network) are in progress.
 |---|---|---|
 | 1 | Bandpass 0.5-40 Hz, average reference, ICA, epoching, AutoReject, bad-channel interpolation, per-subject z-score | `src/data/preprocessing.py` |
 | 2 | Regularized CSP with Ledoit-Wolf shrinkage, One-vs-Rest for 4 classes | `src/spatial/rcsp.py` |
-| 3 | Fixed-band CSP features (mu 8-12 Hz, beta 13-30 Hz) in Phase 2; per-subject KNN-MI adaptive band selection over a 7-band bank (4-32 Hz, top-3) in Phase 3 C1 | `src/features/bandpass.py`, `src/features/adaptive_bands.py`, `src/bands/` |
+| 3 | Fixed-band CSP features (mu 8-12 Hz, beta 13-30 Hz) in Phase 2; 7-band bank (4-32 Hz) with per-subject KNN-MI top-3 selection in Phase 3 C1 (negative), replaced by soft shrunk per-subject band weighting | `src/features/bandpass.py`, `src/features/adaptive_bands.py`, `src/features/soft_adaptive_bands.py`, `src/bands/` |
 | 4 | Fixed-threshold spike encoder, T=16 timesteps; learnable threshold planned | `src/snn/encoder.py` |
 | 5 | Single-timescale LIF SNN; dual-branch PLIF planned | `src/snn/lif_net.py` |
 | 6 | Metrics and SynOps energy proxy | `src/snn/evaluator.py`, `src/snn/synops.py` |
@@ -45,7 +45,7 @@ config/                 Phase 1 and Phase 2 YAML configurations
 src/
   data/                 Loading, run-aware events, preprocessing, balancing, normalization
   features/             Fixed-band and adaptive-band CSP features
-  bands/                Filter bank, KNN-MI scorer, per-subject band selector
+  bands/                Filter bank, KNN-MI scorer, per-subject selector, soft band weights
   spatial/              Regularized CSP
   snn/                  Encoder, LIF network, trainer, evaluator, SynOps
   cv/                   Cross-validation splits
@@ -171,7 +171,34 @@ removes signal instead of adding it.
 
 This result does **not** establish that adaptive bands are useless — band set and
 adaptation are still confounded (2 broad bands vs 3 narrow bands). A fixed 7-band
-control and a higher `top_k` are the next experiments; see `PHASE3_STATUS.md`.
+control and a higher `top_k` were therefore screened with logistic regression before
+any further SNN runs (`scripts/screen_band_conditions.py`, folds 0-1,
+`results/band_screen_folds01.json`):
+
+| Condition | Fold 0 | Fold 1 | Mean |
+|---|---:|---:|---:|
+| `all7` — all 7 bands, no selection | 36.89% | 38.39% | **37.64%** |
+| `adaptive5` — top-5 | 35.79% | 38.33% | 37.06% |
+| `adaptive3` — C1 as run | 34.18% | 37.35% | 35.76% |
+| `broad_mu_beta` — Phase 2 features | 35.27% | 34.64% | 34.96% |
+| `guarded_adaptive` — mu+beta pinned | 34.47% | 34.52% | 34.50% |
+
+The 7-band bank beats the Phase 2 feature set by 2.7 points, and accuracy is monotone
+in the number of bands kept (3 < 5 < 7). So the bank is fine; **hard pruning is what
+costs accuracy**. Pinning mu+beta does not rescue it.
+
+The revised Contribution 1 is therefore **soft adaptive band weighting**
+(`src/bands/soft_weights.py`, `src/features/soft_adaptive_bands.py`): every band is
+kept, and each subject's band blocks are scaled by mean-one weights
+
+```
+w = (1 - lambda) * prior + lambda * softmax(z / temperature)
+```
+
+with `prior` uniform or the all-subject ranking. `lambda = 0` with a uniform prior is
+**bitwise identical** to `all7`, and `lambda = 1` collapses to hard top-1, so the
+method nests both the control and the failure mode. It is currently being screened on
+folds 0-2; no SNN run has been spent on it yet.
 
 ## Configuration
 
