@@ -48,6 +48,10 @@ Chance = 25.0% (4 classes).
 > leave-one-subject-out (LOSO) or unseen-subject result. The all-zero `S091` cache is
 > included in this snapshot as-run, and the SynOps counter is known to undercount
 > operations (the 0.72 value is not a final energy measurement).
+>
+> Both defects were fixed during Phase 3: `S091` is repaired and the SynOps counter now
+> sums emitted spikes (C1 reports ~1174 SynOps/trial). The baseline energy figure must be
+> re-measured before any comparison. See `PHASE3_STATUS.md`.
 
 ### Per-Fold Breakdown
 

@@ -1,0 +1,144 @@
+{
+  "experiment": "phase3_c1_adaptive_bands",
+  "n_folds": 5,
+  "requested_folds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "completed_folds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "resumed_folds": [
+    0,
+    1,
+    2
+  ],
+  "all_folds_complete": true,
+  "partial": false,
+  "effective_epochs": 100,
+  "config_fingerprint": "ffadd79d4d707f74",
+  "n_subjects": 103,
+  "n_trials_total": 8672,
+  "cv_type": "subject_mixed",
+  "band_bank": [
+    [
+      "theta",
+      4.0,
+      8.0
+    ],
+    [
+      "mu",
+      8.0,
+      12.0
+    ],
+    [
+      "low_beta",
+      12.0,
+      16.0
+    ],
+    [
+      "beta",
+      16.0,
+      20.0
+    ],
+    [
+      "high_beta",
+      20.0,
+      24.0
+    ],
+    [
+      "low_gamma",
+      24.0,
+      28.0
+    ],
+    [
+      "gamma",
+      28.0,
+      32.0
+    ]
+  ],
+  "top_k": 3,
+  "feature_dim": 48,
+  "accuracy_mean": 0.2927821598210398,
+  "accuracy_std": 0.01299671114239411,
+  "kappa_mean": 0.05736356243634162,
+  "kappa_std": 0.01765601334986964,
+  "f1_macro_mean": 0.2892682182932693,
+  "f1_macro_std": 0.013205577732102375,
+  "synops_per_trial_mean": 1174.1,
+  "spike_density_mean": 0.0372100830078125,
+  "per_fold": [
+    {
+      "fold": 0,
+      "accuracy": 0.27204610951008645,
+      "kappa": 0.028467999547775014,
+      "f1_macro": 0.26706761893094344,
+      "synops_per_trial": 1173.75,
+      "spike_density": 0.0373077392578125,
+      "n_trials_test": 1735,
+      "f1_left_hand": 0.25404732254047324,
+      "f1_right_hand": 0.2394904458598726,
+      "f1_feet": 0.25487646293888166,
+      "f1_rest": 0.3198562443845463
+    },
+    {
+      "fold": 1,
+      "accuracy": 0.30662824207492795,
+      "kappa": 0.07484303352533506,
+      "f1_macro": 0.2999354325876598,
+      "synops_per_trial": 1238.875,
+      "spike_density": 0.0385589599609375,
+      "n_trials_test": 1735,
+      "f1_left_hand": 0.20851688693098386,
+      "f1_right_hand": 0.3453981385729059,
+      "f1_feet": 0.3363028953229399,
+      "f1_rest": 0.30952380952380953
+    },
+    {
+      "fold": 2,
+      "accuracy": 0.290080738177624,
+      "kappa": 0.055003639106851576,
+      "f1_macro": 0.28761087156254234,
+      "synops_per_trial": 1023.0,
+      "spike_density": 0.0389556884765625,
+      "n_trials_test": 1734,
+      "f1_left_hand": 0.31048387096774194,
+      "f1_right_hand": 0.3028322440087146,
+      "f1_feet": 0.28780487804878047,
+      "f1_rest": 0.24932249322493225
+    },
+    {
+      "fold": 3,
+      "accuracy": 0.29815455594002305,
+      "kappa": 0.0659829323121579,
+      "f1_macro": 0.29662139657949693,
+      "synops_per_trial": 1193.25,
+      "spike_density": 0.0356597900390625,
+      "n_trials_test": 1734,
+      "f1_left_hand": 0.2741738066095471,
+      "f1_right_hand": 0.325,
+      "f1_feet": 0.2723833543505675,
+      "f1_rest": 0.3149284253578732
+    },
+    {
+      "fold": 4,
+      "accuracy": 0.29700115340253747,
+      "kappa": 0.06252020768958855,
+      "f1_macro": 0.295105771805704,
+      "synops_per_trial": 1241.625,
+      "spike_density": 0.0355682373046875,
+      "n_trials_test": 1734,
+      "f1_left_hand": 0.25133689839572193,
+      "f1_right_hand": 0.30010952902519167,
+      "f1_feet": 0.32045454545454544,
+      "f1_rest": 0.30852211434735705
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "n_folds": 5,
+  "n_subjects": 103,
+  "n_subject_fold_pairs": 515,
+  "band_selection_counts": {
+    "high_beta": 316,
+    "low_beta": 263,
+    "mu": 239,
+    "beta": 231,
+    "low_gamma": 210,
+    "gamma": 161,
+    "theta": 125
+  },
+  "band_selection_fraction": {
+    "high_beta": 0.6135922330097088,
+    "low_beta": 0.5106796116504855,
+    "mu": 0.4640776699029126,
+    "beta": 0.44854368932038835,
+    "low_gamma": 0.4077669902912621,
+    "gamma": 0.312621359223301,
+    "theta": 0.24271844660194175
+  },
+  "position_counts": {
+    "1": 515,
+    "2": 515,
+    "3": 515
+  },
+  "subject_folds_missing_mu": 276,
+  "subject_folds_missing_mu_fraction": 0.5359223300970873,
+  "subject_folds_missing_all_sensorimotor": 65,
+  "distinct_band_sets_per_subject": {
+    "mean": 3.3300970873786406,
+    "median": 3,
+    "max": 5,
+    "n_subjects_with_all_five_identical": 5
+  }
+}

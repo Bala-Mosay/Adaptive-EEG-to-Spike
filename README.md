@@ -14,7 +14,7 @@ learnable spike threshold, dual-timescale PLIF network) are in progress.
 |---|---|---|
 | Phase 1 | Signal conditioning, run-aware labels, regularized CSP, CV scaffold | Complete |
 | Phase 2 | Fixed-band CSP, fixed-threshold encoder, single-tau LIF SNN, baseline CV | Complete (snapshot) |
-| Phase 3 | Adaptive KNN-MI bands, learnable threshold, dual-branch PLIF | In progress |
+| Phase 3 | Adaptive KNN-MI bands, learnable threshold, dual-branch PLIF | C1 complete — see `PHASE3_STATUS.md`; C2/C3 pending |
 
 ## Pipeline
 
@@ -22,7 +22,7 @@ learnable spike threshold, dual-timescale PLIF network) are in progress.
 |---|---|---|
 | 1 | Bandpass 0.5-40 Hz, average reference, ICA, epoching, AutoReject, bad-channel interpolation, per-subject z-score | `src/data/preprocessing.py` |
 | 2 | Regularized CSP with Ledoit-Wolf shrinkage, One-vs-Rest for 4 classes | `src/spatial/rcsp.py` |
-| 3 | Fixed-band CSP features (mu 8-12 Hz, beta 13-30 Hz); adaptive KNN-MI selection planned | `src/features/bandpass.py` |
+| 3 | Fixed-band CSP features (mu 8-12 Hz, beta 13-30 Hz) in Phase 2; per-subject KNN-MI adaptive band selection over a 7-band bank (4-32 Hz, top-3) in Phase 3 C1 | `src/features/bandpass.py`, `src/features/adaptive_bands.py`, `src/bands/` |
 | 4 | Fixed-threshold spike encoder, T=16 timesteps; learnable threshold planned | `src/snn/encoder.py` |
 | 5 | Single-timescale LIF SNN; dual-branch PLIF planned | `src/snn/lif_net.py` |
 | 6 | Metrics and SynOps energy proxy | `src/snn/evaluator.py`, `src/snn/synops.py` |
@@ -44,7 +44,8 @@ learnable spike threshold, dual-timescale PLIF network) are in progress.
 config/                 Phase 1 and Phase 2 YAML configurations
 src/
   data/                 Loading, run-aware events, preprocessing, balancing, normalization
-  features/             Fixed-band CSP features
+  features/             Fixed-band and adaptive-band CSP features
+  bands/                Filter bank, KNN-MI scorer, per-subject band selector
   spatial/              Regularized CSP
   snn/                  Encoder, LIF network, trainer, evaluator, SynOps
   cv/                   Cross-validation splits
@@ -93,6 +94,14 @@ python experiments/run_logreg_diagnostic.py
 python experiments/run_per_subject_diagnostic.py
 ```
 
+Run the Phase 3 C1 adaptive-band experiment (checkpointed; `--resume` skips completed folds):
+
+```bash
+python -u experiments/run_phase3.py --config config/phase3_config.yaml \
+    --log-file results/phase3_c1_run.log --resume
+python scripts/analyze_phase3_bands.py --json results/phase3_c1/band_diagnostics.json
+```
+
 Preprocessed trials are cached per subject under `outputs/preprocessed/`. The cache is
 regenerable and is not committed.
 
@@ -132,6 +141,31 @@ These are historical Phase 2 results and are **not** unseen-subject results:
   yet receive time-resolved EEG.
 - LOSO is not implemented yet: `PerSubjectZScore` requires the held-out subject to have
   been seen during fitting.
+
+## Phase 3 C1 results — adaptive KNN-MI bands (negative)
+
+Full detail in `PHASE3_STATUS.md`. Snapshot files: `results/phase3_c1/`.
+
+Same protocol as Phase 2 (5-fold subject-mixed, trial-level CV, 103 subjects, 8,672
+trials, everything fit on the training fold only).
+
+| Model | Features | Accuracy | Kappa | F1 macro |
+|---|---|---:|---:|---:|
+| Phase 2 baseline SNN | fixed mu + beta (32 dims) | **31.85% +/- 1.08** | 0.091 | 0.316 |
+| Phase 3 C1 SNN | adaptive top-3 of 7 bands (48 dims) | **29.28% +/- 1.30** | 0.057 | 0.289 |
+
+C1 is **2.57 accuracy points below the baseline** and lower in 4 of 5 folds.
+
+The band-selection diagnostics explain it: across 515 subject-fold selections the
+selector discards the classic mu band in **53.6%** of cases, keeps **no** sensorimotor
+band (mu/low_beta/beta) in 12.6%, and produces **3.33 distinct band sets per subject
+across the 5 folds** (only 5/103 subjects are consistent). At ~70 training trials per
+subject and `n_neighbors=5`, the KNN-MI ranking is noise-dominated, so the adaptation
+removes signal instead of adding it.
+
+This result does **not** establish that adaptive bands are useless — band set and
+adaptation are still confounded (2 broad bands vs 3 narrow bands). A fixed 7-band
+control and a higher `top_k` are the next experiments; see `PHASE3_STATUS.md`.
 
 ## Configuration
 
@@ -178,8 +212,10 @@ Documented in `README`/status files and in code:
 3. Add subject-disjoint LOSO with subject-independent normalization.
 4. Seed Torch/NumPy globally, save predictions/checkpoints, and report multiple seeds.
 5. Move Stage 1 fitting inside the CV loop (or quantify the transductive effect).
-6. Implement Phase 3: adaptive KNN-MI bands, learnable threshold, dual-branch PLIF.
-7. Update all reported numbers and remove the "cross-subject" label where it does not apply.
+6. Phase 3 C1 is complete with a negative result; add the fixed 7-band control and a
+   `top_k` sweep to isolate band-set effects from selector noise (`PHASE3_STATUS.md`).
+7. Implement Phase 3 C2 (learnable threshold) and C3 (dual-branch PLIF + attention fusion).
+8. Update all reported numbers and remove the "cross-subject" label where it does not apply.
 
 ## References and paper
 

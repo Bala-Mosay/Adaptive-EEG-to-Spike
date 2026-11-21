@@ -11,10 +11,12 @@
   "completed_folds": [
     0,
     1,
-    2
+    2,
+    3,
+    4
   ],
   "n_subjects_loaded": 103,
   "n_trials_total": 8672,
-  "feature_dim": null,
-  "updated_at": "2026-11-21 11:02:58"
+  "feature_dim": 48,
+  "updated_at": "2026-11-21 13:04:27"
 }

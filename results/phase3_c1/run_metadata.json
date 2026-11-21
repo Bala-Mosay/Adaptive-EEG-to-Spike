@@ -1,0 +1,32 @@
+{
+  "experiment": "phase3_c1_adaptive_bands",
+  "seed": 42,
+  "device": "cpu",
+  "cv_type": "subject_mixed",
+  "n_subjects_loaded": 103,
+  "n_trials": 8672,
+  "feature_dim": 48,
+  "effective_epochs": 100,
+  "requested_folds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "completed_folds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "resumed_folds": [
+    0,
+    1,
+    2
+  ],
+  "all_folds_complete": true,
+  "config_fingerprint": "ffadd79d4d707f74",
+  "git_commit": "beea75139a55747bca387c10e4944c68f70c5de3"
+}
