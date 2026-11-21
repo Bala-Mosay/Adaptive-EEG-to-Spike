@@ -102,6 +102,12 @@ python -u experiments/run_phase3.py --config config/phase3_config.yaml \
 python scripts/analyze_phase3_bands.py --json results/phase3_c1/band_diagnostics.json
 ```
 
+Screen band-selection variants cheaply (logistic regression on the same folds, no SNN):
+
+```bash
+python scripts/screen_band_conditions.py --folds 0,1 --json results/band_screen_folds01.json
+```
+
 Preprocessed trials are cached per subject under `outputs/preprocessed/`. The cache is
 regenerable and is not committed.
 

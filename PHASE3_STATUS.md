@@ -24,8 +24,9 @@ Last updated: 2026-11-21.
    checkpoints, config-fingerprint guard, resume, terminal status bars, and coarse
    progress logs for non-interactive runs.
 6. **Config** — `config/phase3_config.yaml` (seed 42, 100 epochs, `device: auto`).
-7. **Tests** — 67 passing, including leakage guards and a bitwise check that chunked
-   band filtering does not change results.
+7. **Tests** — 71 passing, including leakage guards, a bitwise check that chunked
+   band filtering does not change results, and guards that the screening harness
+   reproduces the production feature matrices exactly.
 
 ## Protocol
 
@@ -119,6 +120,36 @@ Candidate follow-ups (each needs its own config fingerprint / run):
 3. Increase `n_neighbors`, or estimate MI on subject-pooled trials with a subject
    indicator, to stabilise the ranking.
 4. Raise `top_k` to 5 and report accuracy against k = 3 and k = 7.
+
+## Selector audit and cheap screening
+
+Before spending ~1 hour of SNN training per fold on a candidate fix, the selector was
+audited and the candidate feature sets are screened with logistic regression.
+
+**Audit (no defect found).** `AdaptiveBandSelector._select` ranks by `-score`, so the
+highest mutual information wins; bands are returned in filter-bank order, so block
+positions are stable. `AdaptiveBandCSPFeatures.transform` restricts each trial to its
+own subject's bands (covered by `tests/test_adaptive_bands.py`). The screening helpers
+are bitwise identical to the production path (`tests/test_band_screen.py`): the
+single-pass extractor matches `FixedBandCSPFeatures.fit` + `.transform` exactly, and
+the screened column selection matches `AdaptiveBandCSPFeatures.transform` exactly.
+The C1 loss is therefore statistical, not a ranking-direction or slicing bug.
+
+**Screen.** `scripts/screen_band_conditions.py` does one 7-band CSP pass per fold and
+then scores several conditions on the same fold with logistic regression:
+
+| Condition | Bands | Dims |
+|---|---|---|
+| `broad_mu_beta` | Phase 2 mu + beta (broad) | 32 |
+| `all7` | all seven narrow bands, no selection | 112 |
+| `adaptive3` | C1 as run (per-subject top-3) | 48 |
+| `adaptive5` | per-subject top-5 | 80 |
+| `sensorimotor3` | fixed mu + low_beta + beta | 48 |
+| `guarded_adaptive` | mu + beta pinned, plus best remaining | 48 |
+
+The linear classifier is a **proxy**, not a substitute: on identical features Phase 2
+measured 34.6% (LogReg) vs 31.8% (SNN). It is used to rank candidates cheaply; the
+winning condition still needs a full SNN run for the thesis number.
 
 ## Caveats
 
